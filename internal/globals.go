@@ -1,15 +1,9 @@
-// SPDX-License-Identifier: MIT OR Unlicense
-
-package main
+package internal
 
 import "github.com/urfave/cli/v2"
 
 // Flags set via the CLI which control how the output is displayed
-
 var (
-	// Verbose enables verbose logging output
-	Verbose = false
-
 	// Include minified files
 	IncludeMinified = false
 
@@ -55,27 +49,17 @@ var (
 	// AllowListExtensions is a list of extensions which are whitelisted to be processed
 	AllowListExtensions = cli.NewStringSlice()
 
-	// SearchString str if set to anything is what we want to run the search for against the current directory
-	SearchString []string
-
 	// SnippetLength contains many characters out of the file to display in snippets
 	SnippetLength int64 = 300
 
 	// SnippetCount is the number of snippets per file to display
-	SnippetCount int64 = 1
+	SnippetCount = 1
 
 	// Include hidden files and directories in search
 	IncludeHidden = false
 
-	// Address is the address to listen on when in HTTP mode
-	Address string = ":8080"
-
-	// HttpServer indicates if we should fork into HTTP mode or not
-	HttpServer bool = false
-
-	// SearchTemplate is the location to the search page template
-	SearchTemplate = ""
-
-	// DisplayTemplate is the location to the display page template
-	DisplayTemplate = ""
+	// // SearchTemplate is the location to the search page template
+	// SearchTemplate = ""
+	// // DisplayTemplate is the location to the display page template
+	// DisplayTemplate = ""
 )

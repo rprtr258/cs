@@ -1,6 +1,4 @@
-// SPDX-License-Identifier: MIT OR Unlicense
-
-package main
+package internal
 
 import "time"
 

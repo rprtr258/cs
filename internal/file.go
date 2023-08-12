@@ -1,11 +1,8 @@
-// SPDX-License-Identifier: MIT OR Unlicense
-
-package main
+package internal
 
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"os"
 	"runtime"
 	"sync"
@@ -13,59 +10,22 @@ import (
 
 	"github.com/boyter/gocodewalker"
 	"github.com/lithammer/fuzzysearch/fuzzy"
+	"github.com/rprtr258/fun/iter"
+	"github.com/rs/zerolog/log"
 )
 
-var (
-	dirFilePaths             = []string{}
-	searchToFileMatchesCache = map[string][]string{}
-)
+var DirFilePaths string
 
 // var searchToFileMatchesCacheMutex = sync.Mutex{}
-func FindFiles(query string) chan *gocodewalker.File {
-	// TODO enable this again as it seems to have issues
-	//searchToFileMatchesCacheMutex.Lock()
-	//defer searchToFileMatchesCacheMutex.Unlock()
-	//
-	//// get the keys for the cache
-	//var keys []string
-	//for k := range searchToFileMatchesCache {
-	//	keys = append(keys, k)
-	//}
-	//
-	//// clear from the cache anything longer than the search since its will not help us
-	//for _, k := range keys {
-	//	if len(k) > len(query) || query[0] != k[0] { // if cached is longer OR the first char does not match...
-	//		delete(searchToFileMatchesCache, k)
-	//	}
-	//}
-	//
-	//// check if the files we expect are in the cache...
-	//files := make(chan *gocodewalker.File, 100000)
-	//for i := len(query); i > 0; i-- {
-	//	r, ok := searchToFileMatchesCache[query[:i]]
-	//	if ok {
-	//		go func() {
-	//			for _, f := range r {
-	//				files <- &gocodewalker.File{Location: f}
-	//			}
-	//			close(files)
-	//		}()
-	//		return files
-	//	}
-	//}
-
-	return walkFiles()
-}
-
-func walkFiles() chan *gocodewalker.File {
+func FindFiles() chan *gocodewalker.File {
 	// Now we need to run through every file closed by the filewalker when done
 	fileListQueue := make(chan *gocodewalker.File, 1000)
 
 	if FindRoot {
-		dirFilePaths[0] = gocodewalker.FindRepositoryRoot(dirFilePaths[0])
+		DirFilePaths = gocodewalker.FindRepositoryRoot(DirFilePaths)
 	}
 
-	fileWalker := gocodewalker.NewFileWalker(dirFilePaths[0], fileListQueue)
+	fileWalker := gocodewalker.NewFileWalker(DirFilePaths, fileListQueue)
 	fileWalker.AllowListExtensions = AllowListExtensions.Value()
 	fileWalker.IgnoreIgnoreFile = IgnoreIgnoreFile
 	fileWalker.IgnoreGitIgnore = IgnoreGitIgnore
@@ -83,32 +43,27 @@ func readFileContent(f *gocodewalker.File) []byte {
 		return nil
 	}
 
-	var content []byte
-
 	// Only read up to point of a file because anything beyond that is probably pointless
 	if fi.Size() < MaxReadSizeBytes {
-		var err error
-		content, err = os.ReadFile(f.Location)
+		content, err := os.ReadFile(f.Location)
 		if err != nil {
 			return nil
 		}
-	} else {
-		fil, err := os.Open(f.Location)
-		if err != nil {
-			return nil
-		}
-		defer fil.Close()
-
-		byteSlice := make([]byte, MaxReadSizeBytes)
-		_, err = fil.Read(byteSlice)
-		if err != nil {
-			return nil
-		}
-
-		content = byteSlice
+		return content
 	}
 
-	return content
+	fil, err := os.Open(f.Location)
+	if err != nil {
+		return nil
+	}
+	defer fil.Close()
+
+	byteSlice := make([]byte, MaxReadSizeBytes)
+	if _, err = fil.Read(byteSlice); err != nil {
+		return nil
+	}
+
+	return byteSlice
 }
 
 // Given a file to read will read the contents into memory and determine if we should process it
@@ -117,9 +72,9 @@ func processFile(f *gocodewalker.File) ([]byte, error) {
 	content := readFileContent(f)
 
 	if len(content) == 0 {
-		if Verbose {
-			fmt.Printf("empty file so moving on %s\n", f.Location)
-		}
+		log.Debug().
+			Str("file", f.Location).
+			Msg("empty file so moving on")
 		return nil, errors.New("empty file so moving on")
 	}
 
@@ -137,27 +92,29 @@ func processFile(f *gocodewalker.File) ([]byte, error) {
 		}
 
 		if isBinary {
-			if Verbose {
-				fmt.Printf("file determined to be binary so moving on %s\n", f.Location)
-			}
+			log.Debug().
+				Str("file", f.Location).
+				Msg("file determined to be binary so moving on")
 			return nil, errors.New("binary file")
 		}
 	}
 
 	if !IncludeMinified {
+		newlines := iter.Count(
+			iter.Filter(
+				iter.Values(
+					iter.FromSlice(content)),
+				func(b byte) bool { return b == '\n' }))
+
 		// Check if this file is minified
 		// Check if the file is minified and if so ignore it
-		split := bytes.Split(content, []byte("\n"))
-		sumLineLength := 0
-		for _, s := range split {
-			sumLineLength += len(s)
-		}
-		averageLineLength := sumLineLength / len(split)
+		sumLineLength := len(content) - newlines
+		averageLineLength := sumLineLength / (newlines + 1)
 
 		if averageLineLength > MinifiedLineByteLength {
-			if Verbose {
-				fmt.Printf("file determined to be minified so moving on %s", f.Location)
-			}
+			log.Debug().
+				Str("file", f.Location).
+				Msg("file determined to be minified so moving on")
 			return nil, errors.New("file determined to be minified")
 		}
 	}
@@ -167,52 +124,48 @@ func processFile(f *gocodewalker.File) ([]byte, error) {
 
 // FileReaderWorker reads files from disk in parallel
 type FileReaderWorker struct {
-	input            chan *gocodewalker.File
-	output           chan *FileJob
 	fileCount        int64 // Count of the number of files that have been read
-	InstanceId       int
 	MaxReadSizeBytes int64
 	FuzzyMatch       string
 }
 
-func NewFileReaderWorker(input chan *gocodewalker.File, output chan *FileJob) *FileReaderWorker {
+func NewFileReaderWorker(fuzzy string) *FileReaderWorker {
 	return &FileReaderWorker{
-		input:            input,
-		output:           output,
 		fileCount:        0,
 		MaxReadSizeBytes: 1_000_000, // sensible default of 1MB
+		FuzzyMatch:       fuzzy,
 	}
 }
 
-func (f *FileReaderWorker) GetFileCount() int64 {
-	return atomic.LoadInt64(&f.fileCount)
+func (f *FileReaderWorker) GetFileCount() int {
+	return int(atomic.LoadInt64(&f.fileCount))
 }
 
 // Start is responsible for spinning up jobs
 // that read files from disk into memory
-func (f *FileReaderWorker) Start() {
+func (f *FileReaderWorker) Start(input chan *gocodewalker.File) chan *FileJob {
 	var wg sync.WaitGroup
+	output := make(chan *FileJob, runtime.NumCPU()) // Files to be read into memory for processing
 	for i := 0; i < max(2, runtime.NumCPU()); i++ {
 		wg.Add(1)
 		go func() {
-			for res := range f.input {
+			for res := range input {
 				if f.FuzzyMatch != "" {
 					if !fuzzy.MatchFold(f.FuzzyMatch, res.Filename) {
 						continue
 					}
 				}
 
-				fil, err := processFile(res)
-				if err == nil {
+				if fil, err := processFile(res); err == nil {
 					atomic.AddInt64(&f.fileCount, 1)
-					f.output <- &FileJob{
+					output <- &FileJob{
 						Filename:       res.Filename,
 						Extension:      "",
 						Location:       res.Location,
 						Content:        fil,
 						Bytes:          len(fil),
 						Score:          0,
-						MatchLocations: map[string][][]int{},
+						MatchLocations: map[string]iter.Seq[[2]int]{},
 					}
 				}
 			}
@@ -220,6 +173,10 @@ func (f *FileReaderWorker) Start() {
 		}()
 	}
 
-	wg.Wait()
-	close(f.output)
+	go func() {
+		wg.Wait()
+		close(output)
+	}()
+
+	return output
 }
