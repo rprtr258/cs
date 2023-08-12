@@ -6,19 +6,21 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/boyter/gocodewalker"
-	"github.com/lithammer/fuzzysearch/fuzzy"
 	"os"
 	"runtime"
 	"sync"
 	"sync/atomic"
+
+	"github.com/boyter/gocodewalker"
+	"github.com/lithammer/fuzzysearch/fuzzy"
 )
 
-var dirFilePaths = []string{}
-var searchToFileMatchesCache = map[string][]string{}
+var (
+	dirFilePaths             = []string{}
+	searchToFileMatchesCache = map[string][]string{}
+)
 
-//var searchToFileMatchesCacheMutex = sync.Mutex{}
-
+// var searchToFileMatchesCacheMutex = sync.Mutex{}
 func FindFiles(query string) chan *gocodewalker.File {
 	// TODO enable this again as it seems to have issues
 	//searchToFileMatchesCacheMutex.Lock()
@@ -64,10 +66,10 @@ func walkFiles() chan *gocodewalker.File {
 	}
 
 	fileWalker := gocodewalker.NewFileWalker(dirFilePaths[0], fileListQueue)
-	fileWalker.AllowListExtensions = AllowListExtensions
+	fileWalker.AllowListExtensions = AllowListExtensions.Value()
 	fileWalker.IgnoreIgnoreFile = IgnoreIgnoreFile
 	fileWalker.IgnoreGitIgnore = IgnoreGitIgnore
-	fileWalker.LocationExcludePattern = LocationExcludePattern
+	fileWalker.LocationExcludePattern = LocationExcludePattern.Value()
 
 	go func() { _ = fileWalker.Start() }()
 
@@ -190,7 +192,7 @@ func (f *FileReaderWorker) GetFileCount() int64 {
 // that read files from disk into memory
 func (f *FileReaderWorker) Start() {
 	var wg sync.WaitGroup
-	for i := 0; i < maxInt(2, runtime.NumCPU()); i++ {
+	for i := 0; i < max(2, runtime.NumCPU()); i++ {
 		wg.Add(1)
 		go func() {
 			for res := range f.input {

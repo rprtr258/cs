@@ -6,15 +6,16 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	str "github.com/boyter/go-string"
-	"github.com/gdamore/tcell"
-	"github.com/rivo/tview"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	str "github.com/boyter/go-string"
+	"github.com/gdamore/tcell"
+	"github.com/rivo/tview"
 )
 
 type displayResult struct {
@@ -104,37 +105,51 @@ func (cont *tuiApplicationController) drawView() {
 	// We use this to swap out the highlights after we escape to ensure that we don't escape
 	// out own colours
 	md5Digest := md5.New()
-	fmtBegin := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("begin_%d", makeTimestampNano()))))
-	fmtEnd := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("end_%d", makeTimestampNano()))))
+	fmtBegin := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("begin_%d", nowNanos()))))
+	fmtEnd := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("end_%d", nowNanos()))))
 
 	// go and get the codeResults the user wants to see using selected as the offset to display from
 	var codeResults []codeResult
 	for i, res := range resultsCopy {
-		if i >= cont.Offset {
-
-			// TODO run in parallel for performance boost...
-			snippets := extractRelevantV3(res, documentTermFrequency, int(SnippetLength))
-			if len(snippets) == 0 { // false positive most likely
-				continue
-			}
-			snippet := snippets[0]
-
-			// now that we have the relevant portion we need to get just the bits related to highlight it correctly
-			// which this method does. It takes in the snippet, we extract and all of the locations and then return
-			l := getLocated(res, snippet)
-			coloredContent := str.HighlightString(snippet.Content, l, fmtBegin, fmtEnd)
-			coloredContent = tview.Escape(coloredContent)
-
-			coloredContent = strings.Replace(coloredContent, fmtBegin, "[red]", -1)
-			coloredContent = strings.Replace(coloredContent, fmtEnd, "[white]", -1)
-
-			codeResults = append(codeResults, codeResult{
-				Title:    res.Location,
-				Content:  coloredContent,
-				Score:    res.Score,
-				Location: res.Location,
-			})
+		if i < cont.Offset {
+			continue
 		}
+
+		// TODO run in parallel for performance boost...
+		snippets := extractRelevantV3(res, documentTermFrequency, int(SnippetLength))
+		if len(snippets) == 0 { // false positive most likely
+			continue
+		}
+		snippet := snippets[0]
+
+		// now that we have the relevant portion we need to get just the bits related to highlight it correctly
+		// which this method does. It takes in the snippet, we extract and all of the locations and then return
+		l := getLocated(res.MatchLocations, snippet)
+		coloredContent := str.HighlightString(snippet.Content, l, fmtBegin, fmtEnd)
+		coloredContent = tview.Escape(coloredContent)
+
+		coloredContent = strings.Replace(coloredContent, fmtBegin, "[red]", -1)
+		coloredContent = strings.Replace(coloredContent, fmtEnd, "[white]", -1)
+
+		maxLineNumberLen := 0
+		maxLineNumber := snippet.LineEnd
+		for maxLineNumber > 0 {
+			maxLineNumber /= 10
+			maxLineNumberLen++
+		}
+
+		lines := strings.Split(coloredContent, "\n")
+		for i, line := range lines {
+			lines[i] = fmt.Sprintf("[gray]%"+strconv.Itoa(maxLineNumberLen)+"d", snippet.LineStart+i) + ".[white] " + line
+		}
+		coloredContent = strings.Join(lines, "\n")
+
+		codeResults = append(codeResults, codeResult{
+			Title:    res.Location,
+			Content:  coloredContent,
+			Score:    res.Score,
+			Location: res.Location,
+		})
 	}
 
 	// render out what the user wants to see based on the results that have been chosen
@@ -143,7 +158,7 @@ func (cont *tuiApplicationController) drawView() {
 		tuiDisplayResults[i].Body.SetText(t.Content)
 		tuiDisplayResults[i].Location = t.Location
 
-		//we need to update the item so that it displays everything we have put in
+		// we need to update the item so that it displays everything we have put in
 		resultsFlex.ResizeItem(tuiDisplayResults[i].Body, len(strings.Split(t.Content, "\n")), 0)
 	}
 
@@ -234,14 +249,16 @@ func (cont *tuiApplicationController) RotateSpin() {
 }
 
 // Sets up the UI components we need to actually display
-var overallFlex *tview.Flex
-var inputField *tview.InputField
-var queryFlex *tview.Flex
-var resultsFlex *tview.Flex
-var statusView *tview.TextView
-var tuiDisplayResults []displayResult
-var tviewApplication *tview.Application
-var snippetInputField *tview.InputField
+var (
+	overallFlex       *tview.Flex
+	inputField        *tview.InputField
+	queryFlex         *tview.Flex
+	resultsFlex       *tview.Flex
+	statusView        *tview.TextView
+	tuiDisplayResults []displayResult
+	tviewApplication  *tview.Application
+	snippetInputField *tview.InputField
+)
 
 // setup debounce to improve ui feel
 var debounced = NewDebouncer(200 * time.Millisecond)
@@ -257,22 +274,15 @@ func NewTuiSearch() {
 
 	// Create the elements we use to display the code results here
 	for i := 1; i < 50; i++ {
-		var textViewTitle *tview.TextView
-		var textViewBody *tview.TextView
-
-		textViewTitle = tview.NewTextView().
-			SetDynamicColors(true).
-			SetRegions(true).
-			ScrollToBeginning()
-
-		textViewBody = tview.NewTextView().
-			SetDynamicColors(true).
-			SetRegions(true).
-			ScrollToBeginning()
-
 		tuiDisplayResults = append(tuiDisplayResults, displayResult{
-			Title:      textViewTitle,
-			Body:       textViewBody,
+			Title: tview.NewTextView().
+				SetDynamicColors(true).
+				SetRegions(true).
+				ScrollToBeginning(),
+			Body: tview.NewTextView().
+				SetDynamicColors(true).
+				SetRegions(true).
+				ScrollToBeginning(),
 			BodyHeight: -1,
 			SpacerOne:  tview.NewTextView(),
 			SpacerTwo:  tview.NewTextView(),
@@ -312,9 +322,8 @@ func NewTuiSearch() {
 		}).
 		SetChangedFunc(func(text string) {
 			// after the text has changed set the query and trigger a search
-			text = strings.TrimSpace(text)
 			applicationController.ResetOffset() // reset so we are at the first element again
-			applicationController.SetQuery(text)
+			applicationController.SetQuery(strings.TrimSpace(text))
 			debounced(applicationController.DoSearch)
 		})
 
@@ -377,6 +386,14 @@ func NewTuiSearch() {
 		AddItem(snippetInputField, 5, 1, false)
 
 	resultsFlex = tview.NewFlex().SetDirection(tview.FlexRow)
+	// add all of the display codeResults into the container ready to be populated
+	for _, t := range tuiDisplayResults {
+		resultsFlex.
+			AddItem(t.SpacerOne, 1, 0, false).
+			AddItem(t.Title, 1, 0, false).
+			AddItem(t.SpacerTwo, 1, 0, false).
+			AddItem(t.Body, t.BodyHeight, 1, false)
+	}
 
 	overallFlex = tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(queryFlex, 1, 0, false).
@@ -384,34 +401,23 @@ func NewTuiSearch() {
 		AddItem(statusView, 1, 0, false).
 		AddItem(resultsFlex, 0, 1, false)
 
-	// add all of the display codeResults into the container ready to be populated
-	for _, t := range tuiDisplayResults {
-		resultsFlex.AddItem(t.SpacerOne, 1, 0, false)
-		resultsFlex.AddItem(t.Title, 1, 0, false)
-		resultsFlex.AddItem(t.SpacerTwo, 1, 0, false)
-		resultsFlex.AddItem(t.Body, t.BodyHeight, 1, false)
-	}
-
 	if err := tviewApplication.SetRoot(overallFlex, true).SetFocus(inputField).Run(); err != nil {
 		panic(err)
 	}
 }
 
-func getLocated(res *FileJob, v3 Snippet) [][]int {
-	var l [][]int
-
+func getLocated(matchLocations map[string][][]int, v3 Snippet) [][]int {
 	// For all the match locations we have only keep the ones that should be inside
 	// where we are matching
-	for _, value := range res.MatchLocations {
+	var l [][]int
+	for _, value := range matchLocations {
 		for _, s := range value {
 			if s[0] >= v3.StartPos && s[1] <= v3.EndPos {
 				// Have to create a new one to avoid changing the position
 				// unlike in others where we throw away the results afterwards
-				t := []int{s[0] - v3.StartPos, s[1] - v3.StartPos}
-				l = append(l, t)
+				l = append(l, []int{s[0] - v3.StartPos, s[1] - v3.StartPos})
 			}
 		}
 	}
-
 	return l
 }

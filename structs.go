@@ -2,7 +2,7 @@
 
 package main
 
-// FileJob is a struct used to hold the results of processing internally before sent to the formatter
+// FileJob - results of processing internally before sent to the formatter
 type FileJob struct {
 	Filename       string
 	Extension      string

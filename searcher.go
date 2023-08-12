@@ -4,11 +4,12 @@ package main
 
 import (
 	"errors"
-	str "github.com/boyter/go-string"
 	"regexp"
 	"runtime"
 	"strings"
 	"sync"
+
+	str "github.com/boyter/go-string"
 )
 
 type SearcherWorker struct {

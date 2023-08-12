@@ -3,8 +3,9 @@
 package main
 
 import (
-	str "github.com/boyter/go-string"
 	"strings"
+
+	str "github.com/boyter/go-string"
 )
 
 const (

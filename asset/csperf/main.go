@@ -5,17 +5,18 @@ package main
 
 import (
 	"fmt"
-	str "github.com/boyter/go-string"
 	"os"
 	"regexp"
 	"time"
+
+	str "github.com/boyter/go-string"
 )
 
 // Simple test comparison between various search methods
 func main() {
-	//f, _ := os.Create("csperf.pprof")
-	//pprof.StartCPUProfile(f)
-	//defer pprof.StopCPUProfile()
+	// f, _ := os.Create("csperf.pprof")
+	// pprof.StartCPUProfile(f)
+	// defer pprof.StopCPUProfile()
 
 	arg1 := os.Args[1]
 	arg2 := os.Args[2]

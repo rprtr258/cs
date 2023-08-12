@@ -3,13 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	str "github.com/boyter/go-string"
-	"github.com/mattn/go-isatty"
 	"os"
 	"runtime"
 	"strings"
 
+	str "github.com/boyter/go-string"
 	"github.com/fatih/color"
+	"github.com/mattn/go-isatty"
 )
 
 func NewConsoleSearch() {
@@ -141,7 +141,7 @@ func (f *ResultSummarizer) formatJson(results []*FileJob) {
 	if f.FileOutput == "" {
 		fmt.Println(string(jsonString))
 	} else {
-		_ = os.WriteFile(FileOutput, jsonString, 0600)
+		_ = os.WriteFile(FileOutput, jsonString, 0o600)
 		fmt.Println("results written to " + FileOutput)
 	}
 }

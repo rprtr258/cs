@@ -3,10 +3,11 @@
 package main
 
 import (
-	str "github.com/boyter/go-string"
 	"math"
 	"sort"
 	"strings"
+
+	str "github.com/boyter/go-string"
 )
 
 // Takes in the search terms and results and applies chained
@@ -120,7 +121,7 @@ func rankResultsTFIDF(corpusCount int, results []*FileJob, documentFrequencies m
 		// because its going to slow things down. Keep in mind that this works inside the words themselves
 		// I.E. partial matches are the norm so it makes sense to base it on the number of bytes
 		// Also ensure that it is at least 1 to avoid divide by zero errors later on.
-		words := float64(maxInt(1, results[i].Bytes/BytesWordDivisor))
+		words := float64(max(1, results[i].Bytes/BytesWordDivisor))
 
 		// word in the case is the word we are dealing with IE what the user actually searched for
 		// and wordCount is the locations of those words allowing us to know the number of words matching
@@ -183,7 +184,7 @@ func rankResultsBM25(corpusCount int, results []*FileJob, documentFrequencies ma
 	// Get the average number of words across all documents because we need that in BM25 to calculate correctly
 	var averageDocumentWords float64
 	for i := 0; i < len(results); i++ {
-		averageDocumentWords += float64(maxInt(1, results[i].Bytes/BytesWordDivisor))
+		averageDocumentWords += float64(max(1, results[i].Bytes/BytesWordDivisor))
 	}
 	averageDocumentWords = averageDocumentWords / float64(len(results))
 
@@ -197,7 +198,7 @@ func rankResultsBM25(corpusCount int, results []*FileJob, documentFrequencies ma
 		// because its going to slow things down. Keep in mind that this works inside the words themselves
 		// I.E. partial matches are the norm so it makes sense to base it on the number of bytes
 		// Also ensure that it is at least 1 to avoid divide by zero errors later on.
-		words := float64(maxInt(1, results[i].Bytes/BytesWordDivisor))
+		words := float64(max(1, results[i].Bytes/BytesWordDivisor))
 
 		// word in the case is the word we are dealing with IE what the user actually searched for
 		// and wordCount is the locations of those words allowing us to know the number of words matching

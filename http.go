@@ -6,9 +6,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	str "github.com/boyter/go-string"
-	"github.com/boyter/gocodewalker"
-	"github.com/rs/zerolog/log"
 	"html"
 	"html/template"
 	"net/http"
@@ -17,6 +14,11 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	str "github.com/boyter/go-string"
+	"github.com/boyter/gocodewalker"
+	"github.com/rs/zerolog/log"
+	"github.com/urfave/cli/v2"
 )
 
 func StartHttpServer() {
@@ -33,7 +35,7 @@ func StartHttpServer() {
 	})
 
 	http.HandleFunc("/file/", func(w http.ResponseWriter, r *http.Request) {
-		startTime := makeTimestampMilli()
+		startTime := nowMillis()
 		startPos := tryParseInt(r.URL.Query().Get("sp"), 0)
 		endPos := tryParseInt(r.URL.Query().Get("ep"), 0)
 
@@ -67,8 +69,8 @@ func StartHttpServer() {
 		// out highlight should be which we swap out later after we have
 		// HTML escaped everything
 		md5Digest := md5.New()
-		fmtBegin := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("begin_%d", makeTimestampNano()))))
-		fmtEnd := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("end_%d", makeTimestampNano()))))
+		fmtBegin := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("begin_%d", nowNanos()))))
+		fmtEnd := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("end_%d", nowNanos()))))
 
 		coloredContent := str.HighlightString(string(content), [][]int{{startPos, endPos}}, fmtBegin, fmtEnd)
 
@@ -85,7 +87,7 @@ func StartHttpServer() {
 		err = t.Execute(w, fileDisplay{
 			Location:            path,
 			Content:             template.HTML(coloredContent),
-			RuntimeMilliseconds: makeTimestampMilli() - startTime,
+			RuntimeMilliseconds: nowMillis() - startTime,
 		})
 
 		if err != nil {
@@ -94,7 +96,7 @@ func StartHttpServer() {
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		startTime := makeTimestampMilli()
+		startTime := nowMillis()
 		query := r.URL.Query().Get("q")
 		snippetLength := tryParseInt(r.URL.Query().Get("ss"), 300)
 		ext := r.URL.Query().Get("ext")
@@ -128,9 +130,9 @@ func StartHttpServer() {
 			}
 
 			if len(ext) != 0 {
-				AllowListExtensions = []string{ext}
+				AllowListExtensions = cli.NewStringSlice(ext)
 			} else {
-				AllowListExtensions = []string{}
+				AllowListExtensions = cli.NewStringSlice()
 			}
 
 			// walk back through the query to see if we have a shorter one that matches
@@ -165,8 +167,8 @@ func StartHttpServer() {
 		// out highlight should be which we swap out later after we have
 		// HTML escaped everything
 		md5Digest := md5.New()
-		fmtBegin := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("begin_%d", makeTimestampNano()))))
-		fmtEnd := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("end_%d", makeTimestampNano()))))
+		fmtBegin := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("begin_%d", nowNanos()))))
+		fmtEnd := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("end_%d", nowNanos()))))
 
 		documentTermFrequency := calculateDocumentTermFrequency(results)
 
@@ -244,13 +246,12 @@ func StartHttpServer() {
 			SnippetSize:         snippetLength,
 			Results:             searchResults,
 			ResultsCount:        len(results),
-			RuntimeMilliseconds: makeTimestampMilli() - startTime,
+			RuntimeMilliseconds: nowMillis() - startTime,
 			ProcessedFileCount:  fileCount,
 			ExtensionFacet:      calculateExtensionFacet(extensionFacets, query, snippetLength),
 			Pages:               pages,
 			Ext:                 ext,
 		})
-
 		if err != nil {
 			panic(err)
 		}
@@ -320,7 +321,6 @@ func calculatePages(results []*FileJob, pageSize int, query string, snippetLengt
 
 func tryParseInt(x string, def int) int {
 	t, err := strconv.Atoi(x)
-
 	if err != nil {
 		return def
 	}

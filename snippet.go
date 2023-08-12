@@ -4,9 +4,10 @@ package main
 
 import (
 	"bytes"
-	str "github.com/boyter/go-string"
 	"sort"
 	"unicode"
+
+	str "github.com/boyter/go-string"
 )
 
 const (
@@ -192,10 +193,10 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 		// were actually looking for
 		m.Score += float64(len(m.Relevant)) // Factor in how many matches we have
 		// NB the below is commented out because it seems to make things worse generally
-		//m.Score += float64(m.EndPos - m.StartPos) // Factor in how large the snippet is
+		// m.Score += float64(m.EndPos - m.StartPos) // Factor in how large the snippet is
 
 		// Apply higher score where the words are near each other
-		//mid := rv3[i].Start + (rv3[i].End-rv3[i].End)/2 // match word midpoint
+		// mid := rv3[i].Start + (rv3[i].End-rv3[i].End)/2 // match word midpoint
 		mid := rv3[i].Start
 		for _, v := range m.Relevant {
 			p := v.Start + (v.End-v.Start)/2 // comparison word midpoint
