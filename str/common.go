@@ -63,32 +63,21 @@ func PermuteCaseFolding(input string) []string {
 
 // AllSimpleFold given an input rune return a rune slice containing
 // all of the possible simple fold
-func AllSimpleFold(input rune) []rune {
-	var res []rune
-
+func AllSimpleFold(origin rune) []rune {
+	c := origin
+	res := []rune{origin}
 	// This works for getting all folded representations
 	// but feels totally wrong due to the bailout break.
 	// That said its simpler than a while with checks
 	// Investigate https://github.com/golang/go/blob/master/src/regexp/syntax/prog.go#L215 as a possible way to implement
 	for i := 0; i < 255; i++ {
-		input = unicode.SimpleFold(input)
-		if containsRune(res, input) {
+		c = unicode.SimpleFold(c)
+		if c == origin {
 			break
 		}
-		res = append(res, input)
+		res = append(res, c)
 	}
-
 	return res
-}
-
-func containsRune(elements []rune, needle rune) bool {
-	for _, v := range elements {
-		if needle == v {
-			return true
-		}
-	}
-
-	return false
 }
 
 // IsSpace checks bytes MUST which be UTF-8 encoded for a space
