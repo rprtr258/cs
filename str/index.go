@@ -268,6 +268,7 @@ func IndexAllIgnoreCase(haystack string, needle string, limit int) [][2]int {
 						for _, j := range AllSimpleFold(toMatch[i]) {
 							if j == needleRune[i] {
 								isMatch = true
+								break
 							}
 						}
 					}
