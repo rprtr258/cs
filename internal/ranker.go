@@ -202,7 +202,6 @@ func rankResultsBM25(corpusCount int, results []*FileJob, documentFrequencies ma
 		// word in the case is the word we are dealing with IE what the user actually searched for
 		// and wordCount is the locations of those words allowing us to know the number of words matching
 		for word, wordCount := range results[i].MatchLocations {
-
 			// TF  = number of this words in this document / words in entire document
 			// IDF = number of documents that contain this word
 			tf := float64(len(wordCount)) / words

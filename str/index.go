@@ -186,7 +186,6 @@ func IndexAllIgnoreCase(haystack string, needle string, limit int) [][2]int {
 		// if the limit is not -1 we need to sort and return the first X results so we maintain compatibility with how
 		// FindAllIndex would work
 		if limit > 0 && len(locs) > limit {
-
 			// now sort the results to we can get the first X results
 			// Now rank based on which ones are the best and sort them on that rank
 			// then get the top amount and the surrounding lines
@@ -299,7 +298,6 @@ func IndexAllIgnoreCase(haystack string, needle string, limit int) [][2]int {
 		// if the limit is not -1 we need to sort and return the first X results so we maintain compatibility with how
 		// FindAllIndex would work
 		if limit > 0 && len(locs) > limit {
-
 			// now sort the results to we can get the first X results
 			// Now rank based on which ones are the best and sort them on that rank
 			// then get the top amount and the surrounding lines

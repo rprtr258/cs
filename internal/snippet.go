@@ -267,7 +267,6 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 
 	var snippets []Snippet
 	for _, b := range bestMatchesClean {
-
 		index := bytes.Index(res.Content, res.Content[b.Pos[0]:b.Pos[1]])
 		startLineOffset := 1
 		for i := 0; i < index; i++ {
