@@ -83,9 +83,7 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 
 	// if we have a huge amount of matches we want to reduce it because otherwise it takes forever
 	// to return something if the search has many matches.
-	if len(rv3) > _relevanceCutoff {
-		rv3 = rv3[:_relevanceCutoff]
-	}
+	rv3 = rv3[:min(len(rv3), _relevanceCutoff)]
 
 	// Slide around looking for matches that fit in the length
 	for i := 0; i < len(rv3); i++ {
@@ -193,7 +191,7 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 			// If the word is within a reasonable distance of this word boost the score
 			// weighted by how common that word is so that matches like 'a' impact the rank
 			// less than something like 'cromulent' which in theory should not occur as much
-			if abs(mid-p) < (relLength / 3) {
+			if abs(mid-p) < relLength/3 {
 				m.Score += 100 / float64(documentFrequencies[v.Word])
 			}
 		}
