@@ -99,5 +99,5 @@ func IsSpace(firstByte, nextByte byte) bool {
 // StartOfRune a byte and returns true if its the start of a multibyte
 // character or a single byte character otherwise false
 func StartOfRune(b byte) bool {
-	return (b < (0b1 << 7)) || ((0b11 << 6) < b)
+	return b < 0b10000000 || 0b11000000 < b
 }
