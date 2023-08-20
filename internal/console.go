@@ -32,15 +32,15 @@ func NewConsoleSearch() {
 
 type ResultSummarizer struct {
 	input            chan *FileJob
-	ResultLimit      int64
+	ResultLimit      int
 	FileReaderWorker *FileReaderWorker
-	SnippetCount     int64
+	SnippetCount     int
 	NoColor          bool
 	Format           string
 	FileOutput       string
 }
 
-func NewResultSummarizer(input chan *FileJob, fileReaderWorker *FileReaderWorker, SnippetCount int64) ResultSummarizer {
+func NewResultSummarizer(input chan *FileJob, fileReaderWorker *FileReaderWorker, SnippetCount int) ResultSummarizer {
 	return ResultSummarizer{
 		input:            input,
 		ResultLimit:      -1,
@@ -62,7 +62,7 @@ func (f *ResultSummarizer) Start() {
 	// Consider moving this check into processor to save on CPU burn there at some point in
 	// the future
 	if f.ResultLimit != -1 {
-		if int64(len(results)) > f.ResultLimit {
+		if len(results) > f.ResultLimit {
 			results = results[:f.ResultLimit]
 		}
 	}
@@ -87,7 +87,7 @@ func (f *ResultSummarizer) formatVimGrep(results []*FileJob) {
 	// Cycle through files with matches and process each snippets inside it.
 	for _, res := range results {
 		snippets := extractRelevantV3(res, documentFrequency, int(SnippetLength))
-		if int64(len(snippets)) > f.SnippetCount {
+		if len(snippets) > f.SnippetCount {
 			snippets = snippets[:f.SnippetCount]
 		}
 
@@ -156,7 +156,7 @@ func (f *ResultSummarizer) formatDefault(results []*FileJob) {
 
 	for _, res := range results {
 		snippets := extractRelevantV3(res, documentFrequency, int(SnippetLength))
-		if int64(len(snippets)) > f.SnippetCount {
+		if len(snippets) > f.SnippetCount {
 			snippets = snippets[:f.SnippetCount]
 		}
 

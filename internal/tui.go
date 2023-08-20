@@ -340,7 +340,7 @@ func NewTuiSearch() error {
 				if t == 0 {
 					SnippetLength = 300
 				} else {
-					SnippetLength = int64(t)
+					SnippetLength = t
 				}
 			}
 		}).

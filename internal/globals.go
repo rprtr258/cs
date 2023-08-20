@@ -15,7 +15,7 @@ var (
 	MinifiedLineByteLength = 255
 
 	// Maximum depth to read into any text file
-	MaxReadSizeBytes int64 = 1_000_000
+	MaxReadSizeBytes = 1_000_000
 
 	// Disables .gitignore checks
 	IgnoreGitIgnore = false
@@ -57,10 +57,10 @@ var (
 	SearchString []string
 
 	// SnippetLength contains many characters out of the file to display in snippets
-	SnippetLength int64 = 300
+	SnippetLength = 300
 
 	// SnippetCount is the number of snippets per file to display
-	SnippetCount int64 = 1
+	SnippetCount = 1
 
 	// Include hidden files and directories in search
 	IncludeHidden = false

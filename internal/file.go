@@ -85,7 +85,7 @@ func readFileContent(f *gocodewalker.File) []byte {
 	var content []byte
 
 	// Only read up to point of a file because anything beyond that is probably pointless
-	if fi.Size() < MaxReadSizeBytes {
+	if fi.Size() < int64(MaxReadSizeBytes) {
 		var err error
 		content, err = os.ReadFile(f.Location)
 		if err != nil {

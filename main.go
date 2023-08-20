@@ -80,14 +80,14 @@ The default input field in tui mode supports some nano commands
 			Name:        "no-gitignore",
 			Usage:       "disables .gitignore file logic",
 		},
-		&cli.Int64Flag{
+		&cli.IntFlag{
 			Destination: &internal.SnippetLength,
 			Name:        "snippet-length",
 			Aliases:     []string{"n"},
 			Value:       300,
 			Usage:       "size of the snippet to display",
 		},
-		&cli.Int64Flag{
+		&cli.IntFlag{
 			Destination: &internal.SnippetCount,
 			Name:        "snippet-count",
 			Aliases:     []string{"s"},
@@ -150,7 +150,7 @@ The default input field in tui mode supports some nano commands
 			Value:       255,
 			Usage:       "number of bytes per average line for file to be considered minified",
 		},
-		&cli.Int64Flag{
+		&cli.IntFlag{
 			Destination: &internal.MaxReadSizeBytes,
 			Name:        "max-read-size-bytes",
 			Value:       1_000_000,
