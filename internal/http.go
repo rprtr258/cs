@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"cmp"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -9,7 +10,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -84,7 +85,6 @@ func StartHttpServer() error {
 			Content:             template.HTML(coloredContent),
 			RuntimeMilliseconds: nowMillis() - startTime,
 		})
-
 		if err != nil {
 			panic(err)
 		}
@@ -268,48 +268,41 @@ func calculateExtensionFacet(extensionFacets map[string]int, query string, snipp
 		})
 	}
 
-	sort.Slice(ef, func(i, j int) bool {
+	slices.SortFunc(ef, func(i, j facetResult) int {
 		// If the same count sort by the name to ensure it's consistent on the display
-		if ef[i].Count == ef[j].Count {
-			return strings.Compare(ef[i].Title, ef[j].Title) < 0
+		if i.Count != j.Count {
+			return cmp.Compare(i.Count, j.Count)
 		}
-		return ef[i].Count > ef[j].Count
+		return strings.Compare(i.Title, j.Title)
 	})
 
 	return ef
 }
 
+// TODO: simplify to only third case
 func calculatePages(results []*FileJob, pageSize int, query string, snippetLength int, ext string) []pageResult {
-	var pages []pageResult
-
 	if len(results) == 0 {
-		return pages
+		return nil
 	}
 
 	if len(results) <= pageSize {
-		pages = append(pages, pageResult{
+		return []pageResult{{
 			SearchTerm:  query,
 			SnippetSize: snippetLength,
 			Value:       0,
 			Name:        "1",
-		})
-
-		return pages
+		}}
 	}
 
-	a := 1
-	if len(results)%pageSize == 0 {
-		a = 0
-	}
-
-	for i := 0; i < len(results)/pageSize+a; i++ {
-		pages = append(pages, pageResult{
+	pages := make([]pageResult, (len(results)+pageSize-1)/pageSize)
+	for i := range pages {
+		pages[i] = pageResult{
 			SearchTerm:  query,
 			SnippetSize: snippetLength,
 			Value:       i,
 			Name:        strconv.Itoa(i + 1),
 			Ext:         ext,
-		})
+		}
 	}
 	return pages
 }
