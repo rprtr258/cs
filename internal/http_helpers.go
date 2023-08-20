@@ -44,7 +44,8 @@ type facetResult struct {
 	SnippetSize int
 }
 
-var httpFileTemplate = `<html>
+var (
+	_templateHTMLDisplay = template.Must(template.New("display.tmpl").Parse(`<html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>{{ .Location }}</title>
@@ -92,9 +93,9 @@ var httpFileTemplate = `<html>
 			<pre>{{ .Content }}</pre>
 		</div>
 	</body>
-</html>`
+</html>`))
 
-var httpSearchTemplate = `<html>
+	_templateHTMLSearch = `<html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>{{ .SearchTerm }}</title>
@@ -170,3 +171,4 @@ var httpSearchTemplate = `<html>
 		</div>
 	</body>
 </html>`
+)

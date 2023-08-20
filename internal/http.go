@@ -32,6 +32,11 @@ func StartHttpServer() error {
 		http.ServeFile(w, r, path)
 	})
 
+	templateDisplay := _templateHTMLDisplay
+	if DisplayTemplate != "" {
+		templateDisplay = template.Must(template.New("display.tmpl").ParseFiles(DisplayTemplate))
+	}
+
 	http.HandleFunc("/file/", func(w http.ResponseWriter, r *http.Request) {
 		startTime := nowMillis()
 		startPos := tryParseInt(r.URL.Query().Get("sp"), 0)
@@ -74,13 +79,7 @@ func StartHttpServer() error {
 		coloredContent = strings.Replace(coloredContent, fmtBegin, fmt.Sprintf(`<strong id="%d">`, startPos), -1)
 		coloredContent = strings.Replace(coloredContent, fmtEnd, "</strong>", -1)
 
-		t := template.Must(template.New("display.tmpl").Parse(httpFileTemplate))
-
-		if DisplayTemplate != "" {
-			t = template.Must(template.New("display.tmpl").ParseFiles(DisplayTemplate))
-		}
-
-		err = t.Execute(w, fileDisplay{
+		err = templateDisplay.Execute(w, fileDisplay{
 			Location:            path,
 			Content:             template.HTML(coloredContent),
 			RuntimeMilliseconds: nowMillis() - startTime,
@@ -231,7 +230,7 @@ func StartHttpServer() error {
 			})
 		}
 
-		t := template.Must(template.New("search.tmpl").Parse(httpSearchTemplate))
+		t := template.Must(template.New("search.tmpl").Parse(_templateHTMLSearch))
 		if SearchTemplate != "" {
 			// If we have been supplied a template then load it up
 			t = template.Must(template.New("search.tmpl").ParseFiles(SearchTemplate))
