@@ -143,8 +143,7 @@ func StartHttpServer() error {
 
 			q, fuzzy := PreParseQuery(strings.Fields(query))
 
-			fileReaderWorker := NewFileReaderWorker(files, toProcessQueue)
-			fileReaderWorker.FuzzyMatch = fuzzy
+			fileReaderWorker := NewFileReaderWorker(files, toProcessQueue, fuzzy)
 			fileSearcher := NewSearcherWorker(toProcessQueue, summaryQueue)
 			fileSearcher.SearchString = q
 

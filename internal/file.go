@@ -174,12 +174,13 @@ type FileReaderWorker struct {
 	FuzzyMatch       string
 }
 
-func NewFileReaderWorker(input chan *gocodewalker.File, output chan *FileJob) *FileReaderWorker {
+func NewFileReaderWorker(input chan *gocodewalker.File, output chan *FileJob, fuzzy string) *FileReaderWorker {
 	return &FileReaderWorker{
 		input:            input,
 		output:           output,
 		fileCount:        0,
 		MaxReadSizeBytes: 1_000_000, // sensible default of 1MB
+		FuzzyMatch:       fuzzy,
 	}
 }
 

@@ -19,8 +19,7 @@ func NewConsoleSearch() {
 
 	// parse the query here to get the fuzzy stuff
 	query, fuzzy := PreParseQuery(SearchString)
-	fileReaderWorker := NewFileReaderWorker(files, toProcessQueue)
-	fileReaderWorker.FuzzyMatch = fuzzy
+	fileReaderWorker := NewFileReaderWorker(files, toProcessQueue, fuzzy)
 
 	fileSearcher := NewSearcherWorker(toProcessQueue, summaryQueue)
 	fileSearcher.SearchString = query

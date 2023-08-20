@@ -205,8 +205,7 @@ func (cont *tuiApplicationController) DoSearch() {
 		summaryQueue := make(chan *FileJob, runtime.NumCPU())   // Files that match and need to be displayed
 
 		q, fuzzy := PreParseQuery(strings.Fields(query))
-		fileReaderWorker := NewFileReaderWorker(files, toProcessQueue)
-		fileReaderWorker.FuzzyMatch = fuzzy
+		fileReaderWorker := NewFileReaderWorker(files, toProcessQueue, fuzzy)
 		fileSearcher := NewSearcherWorker(toProcessQueue, summaryQueue)
 		fileSearcher.SearchString = q
 
