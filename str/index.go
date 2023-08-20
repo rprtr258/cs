@@ -57,7 +57,6 @@ func IndexAll(haystack string, needle string, limit int) [][2]int {
 	var count int
 	for loc != -1 {
 		count++
-
 		if count == limit {
 			break
 		}
