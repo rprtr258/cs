@@ -8,15 +8,16 @@ import (
 // RemoveStringDuplicates is a simple helper method that removes duplicates from
 // any given str slice and then returns a nice duplicate free str slice
 func RemoveStringDuplicates(elements []string) []string {
-	encountered := map[string]struct{}{}
-	var result []string
+	uniques := map[string]struct{}{}
 	for v := range elements {
-		if _, ok := encountered[elements[v]]; !ok {
-			encountered[elements[v]] = struct{}{}
-			result = append(result, elements[v])
-		}
+		uniques[elements[v]] = struct{}{}
 	}
-	return result
+
+	res := make([]string, 0, len(uniques))
+	for v := range uniques {
+		res = append(res, v)
+	}
+	return res
 }
 
 // PermuteCase given a str returns a slice containing all possible case permutations
@@ -30,14 +31,13 @@ func PermuteCase(input string) []string {
 	var combinations []string
 	for i := 0; i < max; i++ {
 		var sb strings.Builder
-		for j, ch := range input {
+		for j, ch := range input { // TODO: j is byte index, so might produce duplicates
 			if i&(1<<j) == 0 {
 				sb.WriteRune(unicode.ToUpper(ch))
 			} else {
 				sb.WriteRune(unicode.ToLower(ch))
 			}
 		}
-
 		combinations = append(combinations, sb.String())
 	}
 	return RemoveStringDuplicates(combinations)
