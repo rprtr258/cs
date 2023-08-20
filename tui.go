@@ -1,19 +1,21 @@
-package internal
+// // SPDX-License-Identifier: MIT OR Unlicense
+
+package main
 
 import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/boyter/cs/str"
+	str "github.com/boyter/go-string"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
-	"github.com/rprtr258/fun/iter"
 )
 
 type displayResult struct {
@@ -36,7 +38,7 @@ type tuiApplicationController struct {
 	Query         string
 	Offset        int
 	Results       []*FileJob
-	DocumentCount int
+	DocumentCount int64
 	Mutex         sync.Mutex
 	DrawMutex     sync.Mutex
 	SearchMutex   sync.Mutex
@@ -67,17 +69,8 @@ func (cont *tuiApplicationController) ResetOffset() {
 	cont.Offset = 0
 }
 
-func makeFmt(prefix string) string {
-	return hex.EncodeToString(md5.New().Sum([]byte(fmt.Sprintf("%s%d", prefix, nowNanos()))))
-}
-
-func digitsCount(n int) int {
-	res := 0
-	for n > 0 {
-		n /= 10
-		res++
-	}
-	return res
+func (cont *tuiApplicationController) GetOffset() int {
+	return cont.Offset
 }
 
 // After any change is made that requires something drawn on the screen this is the method that does it
@@ -100,8 +93,8 @@ func (cont *tuiApplicationController) drawView() {
 
 	// rank all results
 	// then go and get the relevant portion for display
-	rankResults(cont.DocumentCount, resultsCopy)
-	documentTermFrequency := calculateDocumentTermFrequency(iter.FromMany(resultsCopy...))
+	rankResults(int(cont.DocumentCount), resultsCopy)
+	documentTermFrequency := calculateDocumentTermFrequency(resultsCopy)
 
 	// after ranking only get the details for as many as we actually need to
 	// cut down on processing
@@ -111,8 +104,9 @@ func (cont *tuiApplicationController) drawView() {
 
 	// We use this to swap out the highlights after we escape to ensure that we don't escape
 	// out own colours
-	fmtBegin := makeFmt("begin_")
-	fmtEnd := makeFmt("end_")
+	md5Digest := md5.New()
+	fmtBegin := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("begin_%d", nowNanos()))))
+	fmtEnd := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("end_%d", nowNanos()))))
 
 	// go and get the codeResults the user wants to see using selected as the offset to display from
 	var codeResults []codeResult
@@ -122,10 +116,11 @@ func (cont *tuiApplicationController) drawView() {
 		}
 
 		// TODO run in parallel for performance boost...
-		snippet, ok := extractRelevantV3(res, documentTermFrequency, int(SnippetLength)).Head()
-		if !ok { // false positive most likely
+		snippets := extractRelevantV3(res, documentTermFrequency, int(SnippetLength))
+		if len(snippets) == 0 { // false positive most likely
 			continue
 		}
+		snippet := snippets[0]
 
 		// now that we have the relevant portion we need to get just the bits related to highlight it correctly
 		// which this method does. It takes in the snippet, we extract and all of the locations and then return
@@ -136,16 +131,22 @@ func (cont *tuiApplicationController) drawView() {
 		coloredContent = strings.Replace(coloredContent, fmtBegin, "[red]", -1)
 		coloredContent = strings.Replace(coloredContent, fmtEnd, "[white]", -1)
 
+		maxLineNumberLen := 0
+		maxLineNumber := snippet.LineEnd
+		for maxLineNumber > 0 {
+			maxLineNumber /= 10
+			maxLineNumberLen++
+		}
+
 		lines := strings.Split(coloredContent, "\n")
 		for i, line := range lines {
-			lines[i] = fmt.Sprintf("[gray]%"+strconv.Itoa(digitsCount(snippet.LineEnd))+"d.[white] %s",
-				snippet.LineStart+i,
-				line,
-			)
+			lines[i] = fmt.Sprintf("[gray]%"+strconv.Itoa(maxLineNumberLen)+"d", snippet.LineStart+i) + ".[white] " + line
 		}
+		coloredContent = strings.Join(lines, "\n")
+
 		codeResults = append(codeResults, codeResult{
 			Title:    res.Location,
-			Content:  strings.Join(lines, "\n"),
+			Content:  coloredContent,
 			Score:    res.Score,
 			Location: res.Location,
 		})
@@ -194,19 +195,30 @@ func (cont *tuiApplicationController) DoSearch() {
 	var status string
 
 	if strings.TrimSpace(query) != "" {
-		files := FindFiles()
+		files := FindFiles(query)
+		toProcessQueue := make(chan *FileJob, runtime.NumCPU()) // Files to be read into memory for processing
+		summaryQueue := make(chan *FileJob, runtime.NumCPU())   // Files that match and need to be displayed
 
 		q, fuzzy := PreParseQuery(strings.Fields(query))
+		fileReaderWorker := NewFileReaderWorker(files, toProcessQueue)
+		fileReaderWorker.FuzzyMatch = fuzzy
+		fileSearcher := NewSearcherWorker(toProcessQueue, summaryQueue)
+		fileSearcher.SearchString = q
 
-		fileReaderWorker := NewFileReaderWorker(fuzzy)
-		toProcessQueue := fileReaderWorker.Start(files)
-		fileSearcher := NewSearcherWorker(q)
-		summaryQueue := fileSearcher.Start(toProcessQueue)
+		resultSummarizer := NewResultSummarizer(summaryQueue)
+		resultSummarizer.FileReaderWorker = fileReaderWorker
+		resultSummarizer.SnippetCount = SnippetCount
+
+		go fileReaderWorker.Start()
+		go fileSearcher.Start()
 
 		// First step is to collect results so we can rank them
+		fileMatches := []string{}
 		for f := range summaryQueue {
 			results = append(results, f)
+			fileMatches = append(fileMatches, f.Location)
 		}
+		searchToFileMatchesCache[query] = fileMatches
 
 		plural := "s"
 		if len(results) == 1 {
@@ -248,7 +260,10 @@ var (
 	snippetInputField *tview.InputField
 )
 
-func NewTuiSearch() error {
+// setup debounce to improve ui feel
+var debounced = NewDebouncer(200 * time.Millisecond)
+
+func NewTuiSearch() {
 	// start indexing by walking from the current directory and updating
 	// this needs to run in the background with searches spawning from that
 	tviewApplication = tview.NewApplication()
@@ -296,11 +311,10 @@ func NewTuiSearch() error {
 				tviewApplication.SetFocus(snippetInputField)
 			case tcell.KeyUp:
 				applicationController.DecrementOffset()
-				// TODO: remove goroutines
-				go applicationController.drawView()
+				debounced(applicationController.drawView)
 			case tcell.KeyDown:
 				applicationController.IncrementOffset()
-				go applicationController.drawView()
+				debounced(applicationController.drawView)
 			case tcell.KeyESC:
 				tviewApplication.Stop()
 				os.Exit(0)
@@ -310,7 +324,7 @@ func NewTuiSearch() error {
 			// after the text has changed set the query and trigger a search
 			applicationController.ResetOffset() // reset so we are at the first element again
 			applicationController.SetQuery(strings.TrimSpace(text))
-			go applicationController.DoSearch()
+			debounced(applicationController.DoSearch)
 		})
 
 	// Decide how large a snippet we should be displaying
@@ -320,9 +334,15 @@ func NewTuiSearch() error {
 		SetText(strconv.Itoa(int(SnippetLength))).
 		SetFieldWidth(4).
 		SetChangedFunc(func(text string) {
-			SnippetLength = 300 // default
-			if t, _ := strconv.Atoi(text); t != 0 {
-				SnippetLength = int64(t)
+			if strings.TrimSpace(text) == "" {
+				SnippetLength = 300 // default
+			} else {
+				t, _ := strconv.Atoi(text)
+				if t == 0 {
+					SnippetLength = 300
+				} else {
+					SnippetLength = int64(t)
+				}
 			}
 		}).
 		SetDoneFunc(func(key tcell.Key) {
@@ -336,19 +356,19 @@ func NewTuiSearch() error {
 			case tcell.KeyUp:
 				SnippetLength = min(SnippetLength+100, 8000)
 				snippetInputField.SetText(fmt.Sprintf("%d", SnippetLength))
-				go applicationController.DoSearch()
+				debounced(applicationController.DoSearch)
 			case tcell.KeyPgUp:
 				SnippetLength = min(SnippetLength+200, 8000)
 				snippetInputField.SetText(fmt.Sprintf("%d", SnippetLength))
-				go applicationController.DoSearch()
+				debounced(applicationController.DoSearch)
 			case tcell.KeyDown:
 				SnippetLength = max(100, SnippetLength-100)
 				snippetInputField.SetText(fmt.Sprintf("%d", SnippetLength))
-				go applicationController.DoSearch()
+				debounced(applicationController.DoSearch)
 			case tcell.KeyPgDn:
 				SnippetLength = max(100, SnippetLength-200)
 				snippetInputField.SetText(fmt.Sprintf("%d", SnippetLength))
-				go applicationController.DoSearch()
+				debounced(applicationController.DoSearch)
 			case tcell.KeyESC:
 				tviewApplication.Stop()
 				os.Exit(0)
@@ -381,30 +401,23 @@ func NewTuiSearch() error {
 		AddItem(statusView, 1, 0, false).
 		AddItem(resultsFlex, 0, 1, false)
 
-	return tviewApplication.
-		SetRoot(overallFlex, true).
-		SetFocus(inputField).
-		Run()
+	if err := tviewApplication.SetRoot(overallFlex, true).SetFocus(inputField).Run(); err != nil {
+		panic(err)
+	}
 }
 
-func getLocated(matchLocations map[string]iter.Seq[[2]int], v3 Snippet) iter.Seq[[2]int] {
+func getLocated(matchLocations map[string][][]int, v3 Snippet) [][]int {
 	// For all the match locations we have only keep the ones that should be inside
 	// where we are matching
-	return iter.Map(
-		iter.Filter(
-			iter.Flatten(
-				iter.Values(
-					iter.FromDict(
-						matchLocations))),
-			func(s [2]int) bool {
-				return s[0] >= v3.Pos[0] && s[1] <= v3.Pos[1]
-			}),
-		func(s [2]int) [2]int {
-			// Have to create a new one to avoid changing the position
-			// unlike in others where we throw away the results afterwards
-			return [2]int{
-				s[0] - v3.Pos[0],
-				s[1] - v3.Pos[0],
+	var l [][]int
+	for _, value := range matchLocations {
+		for _, s := range value {
+			if s[0] >= v3.StartPos && s[1] <= v3.EndPos {
+				// Have to create a new one to avoid changing the position
+				// unlike in others where we throw away the results afterwards
+				l = append(l, []int{s[0] - v3.StartPos, s[1] - v3.StartPos})
 			}
-		})
+		}
+	}
+	return l
 }

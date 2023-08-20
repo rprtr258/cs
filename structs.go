@@ -1,6 +1,6 @@
-package internal
+// SPDX-License-Identifier: MIT OR Unlicense
 
-import "github.com/rprtr258/fun/iter"
+package main
 
 // FileJob - results of processing internally before sent to the formatter
 type FileJob struct {
@@ -9,6 +9,9 @@ type FileJob struct {
 	Location       string
 	Content        []byte
 	Bytes          int
+	Hash           []byte
+	Binary         bool
 	Score          float64
-	MatchLocations map[string]iter.Seq[[2]int]
+	MatchLocations map[string][][]int
+	Minified       bool
 }

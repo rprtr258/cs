@@ -1,23 +1,26 @@
+// SPDX-License-Identifier: MIT OR Unlicense
+
 package main
 
 import (
+	"log"
 	"os"
 	"strings"
 
-	"github.com/rprtr258/fun"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
-
-	"github.com/boyter/cs/internal"
 )
 
-const _version = "1.3.0"
+const Version = "1.3.0"
 
-var app = cli.App{
-	Name: "cs",
-	Usage: `code spelunker (cs) code search.
-Version ` + _version + `
+func main() {
+	// f, _ := os.Create("profile.pprof")
+	// pprof.StartCPUProfile(f)
+	// defer pprof.StopCPUProfile()
+
+	rootCmd := cli.App{
+		Name: "cs",
+		Usage: `code spelunker (cs) code search.
+Version ` + Version + `
 Ben Boyter <ben@boyter.org>
 
 cs recursively searches the current directory using some boolean logic
@@ -49,170 +52,161 @@ The default input field in tui mode supports some nano commands
 - CTRL+e move to the end of the input
 - CTRL+k to clear from the cursor location forward
 `,
-	Version: _version,
-	Flags: []cli.Flag{
-		&cli.BoolFlag{
-			Destination: &internal.IncludeBinaryFiles,
-			Name:        "binary",
-			Usage:       "set to disable binary file detection and search binary files",
-		},
-		&cli.BoolFlag{
-			Destination: &internal.IgnoreIgnoreFile,
-			Name:        "no-ignore",
-			Usage:       "disables .ignore file logic",
-		},
-		&cli.BoolFlag{
-			Destination: &internal.IgnoreGitIgnore,
-			Name:        "no-gitignore",
-			Usage:       "disables .gitignore file logic",
-		},
-		&cli.Int64Flag{
-			Destination: &internal.SnippetLength,
-			Name:        "snippet-length",
-			Aliases:     []string{"n"},
-			Value:       300,
-			Usage:       "size of the snippet to display",
-		},
-		&cli.IntFlag{
-			Destination: &internal.SnippetCount,
-			Name:        "snippet-count",
-			Aliases:     []string{"s"},
-			Value:       1,
-			Usage:       "number of snippets to display",
-		},
-		&cli.BoolFlag{
-			Destination: &internal.IncludeHidden,
-			Name:        "hidden",
-			Usage:       "include hidden files",
-		},
-		&cli.StringSliceFlag{
-			Destination: internal.AllowListExtensions,
-			Name:        "include-ext",
-			Aliases:     []string{"i"},
-			Usage:       "limit to file extensions (N.B. case sensitive) [comma separated list: e.g. go,java,js,C,cpp]",
-		},
-		&cli.BoolFlag{
-			Destination: &internal.FindRoot,
-			Name:        "find-root",
-			Aliases:     []string{"r"},
-			Usage:       "attempts to find the root of this repository by traversing in reverse looking for .git or .hg",
-		},
-		&cli.StringSliceFlag{
-			Destination: &internal.PathDenylist,
-			Name:        "exclude-dir",
-			Value:       cli.NewStringSlice(".git", ".hg", ".svn", ".jj"),
-			Usage:       "directories to exclude",
-		},
-		&cli.BoolFlag{
-			Destination: &internal.CaseSensitive,
-			Name:        "case-sensitive",
-			Aliases:     []string{"c"},
-			Usage:       "make the search case sensitive",
-		},
-		&cli.StringSliceFlag{
-			Destination: &internal.LocationExcludePattern,
-			Name:        "exclude-pattern",
-			Aliases:     []string{"x"},
-			Usage:       "file and directory locations matching case sensitive patterns will be ignored [comma separated list: e.g. vendor,_test.go]",
-		},
-		&cli.BoolFlag{
-			Destination: &internal.IncludeMinified,
-			Name:        "min",
-			Usage:       "include minified files",
-		},
-		&cli.IntFlag{
-			Destination: &internal.MinifiedLineByteLength,
-			Name:        "min-line-length",
-			Value:       255,
-			Usage:       "number of bytes per average line for file to be considered minified",
-		},
-		&cli.Int64Flag{
-			Destination: &internal.MaxReadSizeBytes,
-			Name:        "max-read-size-bytes",
-			Value:       1_000_000,
-			Usage:       "number of bytes to read into a file with the remaining content ignored",
-		},
-		&cli.StringFlag{
-			Destination: &internal.Format,
-			Name:        "format",
-			Aliases:     []string{"f"},
-			Value:       "text",
-			Usage:       "set output format [text, json, vimgrep]",
-		},
-		&cli.StringFlag{
-			Destination: &internal.Ranker,
-			Name:        "ranker",
-			Value:       "bm25",
-			Usage:       "set ranking algorithm [simple, tfidf, tfidf2, bm25]",
-		},
-		&cli.StringFlag{
-			Destination: &internal.FileOutput,
-			Name:        "output",
-			Aliases:     []string{"o"},
-			Usage:       "output filename (default stdout)",
-		},
-		&cli.StringFlag{
-			Destination: &internal.Directory,
-			Name:        "dir",
-			Usage:       "directory to search, if not set defaults to current working directory",
-		},
-	},
-	Commands: []*cli.Command{
-		{
-			Name: "web",
-			Flags: []cli.Flag{
-				&cli.StringFlag{
-					Name:  "address",
-					Value: ":8080",
-					Usage: "address and port to listen to in HTTP mode",
-				},
-				&cli.StringFlag{
-					Name:  "template-search",
-					Usage: "path to search template for custom styling",
-				},
-				&cli.StringFlag{
-					Name:  "template-display",
-					Usage: "path to display template for custom styling",
-				},
+		Version: Version,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "address",
+				Destination: &Address,
+				Value:       ":8080",
+				Usage:       "address and port to listen to in HTTP mode",
 			},
-			Action: func(ctx *cli.Context) error {
-				return internal.StartHttpServer(
-					ctx.String("address"),
-					ctx.String("template-search"),
-					ctx.String("template-display"),
-				)
+			&cli.BoolFlag{
+				Name:        "http-server",
+				Destination: &HttpServer,
+				Aliases:     []string{"d"},
+				Usage:       "start http server for search",
+			},
+			&cli.BoolFlag{
+				Destination: &IncludeBinaryFiles,
+				Name:        "binary",
+				Usage:       "set to disable binary file detection and search binary files",
+			},
+			&cli.BoolFlag{
+				Destination: &IgnoreIgnoreFile,
+				Name:        "no-ignore",
+				Usage:       "disables .ignore file logic",
+			},
+			&cli.BoolFlag{
+				Destination: &IgnoreGitIgnore,
+				Name:        "no-gitignore",
+				Usage:       "disables .gitignore file logic",
+			},
+			&cli.Int64Flag{
+				Destination: &SnippetLength,
+				Name:        "snippet-length",
+				Aliases:     []string{"n"},
+				Value:       300,
+				Usage:       "size of the snippet to display",
+			},
+			&cli.Int64Flag{
+				Destination: &SnippetCount,
+				Name:        "snippet-count",
+				Aliases:     []string{"s"},
+				Value:       1,
+				Usage:       "number of snippets to display",
+			},
+			&cli.BoolFlag{
+				Destination: &IncludeHidden,
+				Name:        "hidden",
+				Usage:       "include hidden files",
+			},
+			&cli.StringSliceFlag{
+				Destination: AllowListExtensions,
+				Name:        "include-ext",
+				Aliases:     []string{"i"},
+				Usage:       "limit to file extensions (N.B. case sensitive) [comma separated list: e.g. go,java,js,C,cpp]",
+			},
+			&cli.BoolFlag{
+				Destination: &FindRoot,
+				Name:        "find-root",
+				Aliases:     []string{"r"},
+				Usage:       "attempts to find the root of this repository by traversing in reverse looking for .git or .hg",
+			},
+			&cli.StringSliceFlag{
+				Destination: &PathDenylist,
+				Name:        "exclude-dir",
+				Value:       cli.NewStringSlice(".git", ".hg", ".svn", ".jj"),
+				Usage:       "directories to exclude",
+			},
+			&cli.BoolFlag{
+				Destination: &CaseSensitive,
+				Name:        "case-sensitive",
+				Aliases:     []string{"c"},
+				Usage:       "make the search case sensitive",
+			},
+			&cli.StringFlag{
+				Destination: &SearchTemplate,
+				Name:        "template-search",
+				Usage:       "path to search template for custom styling",
+			},
+			&cli.StringFlag{
+				Destination: &DisplayTemplate,
+				Name:        "template-display",
+				Usage:       "path to display template for custom styling",
+			},
+			&cli.StringSliceFlag{
+				Destination: &LocationExcludePattern,
+				Name:        "exclude-pattern",
+				Aliases:     []string{"x"},
+				Usage:       "file and directory locations matching case sensitive patterns will be ignored [comma separated list: e.g. vendor,_test.go]",
+			},
+			&cli.BoolFlag{
+				Destination: &IncludeMinified,
+				Name:        "min",
+				Usage:       "include minified files",
+			},
+			&cli.IntFlag{
+				Destination: &MinifiedLineByteLength,
+				Name:        "min-line-length",
+				Value:       255,
+				Usage:       "number of bytes per average line for file to be considered minified",
+			},
+			&cli.Int64Flag{
+				Destination: &MaxReadSizeBytes,
+				Name:        "max-read-size-bytes",
+				Value:       1_000_000,
+				Usage:       "number of bytes to read into a file with the remaining content ignored",
+			},
+			&cli.StringFlag{
+				Destination: &Format,
+				Name:        "format",
+				Aliases:     []string{"f"},
+				Value:       "text",
+				Usage:       "set output format [text, json, vimgrep]",
+			},
+			&cli.StringFlag{
+				Destination: &Ranker,
+				Name:        "ranker",
+				Value:       "bm25",
+				Usage:       "set ranking algorithm [simple, tfidf, tfidf2, bm25]",
+			},
+			&cli.StringFlag{
+				Destination: &FileOutput,
+				Name:        "output",
+				Aliases:     []string{"o"},
+				Usage:       "output filename (default stdout)",
+			},
+			&cli.StringFlag{
+				Destination: &Directory,
+				Name:        "dir",
+				Usage:       "directory to search, if not set defaults to current working directory",
 			},
 		},
-	},
-	Before: func(ctx *cli.Context) error {
-		internal.DirFilePaths = fun.If(
-			strings.TrimSpace(internal.Directory) != "",
-			internal.Directory,
-			".",
-		)
-		return nil
-	},
-	Action: func(ctx *cli.Context) error {
-		// If there are arguments we want to print straight out to the console
-		// otherwise we should enter interactive tui mode
+		Action: func(ctx *cli.Context) error {
+			SearchString = ctx.Args().Slice()
 
-		if SearchString := ctx.Args().Slice(); len(SearchString) != 0 {
-			internal.NewConsoleSearch(SearchString)
+			dirFilePaths = []string{"."}
+			if strings.TrimSpace(Directory) != "" {
+				dirFilePaths = []string{Directory}
+			}
+
+			// If there are arguments we want to print straight out to the console
+			// otherwise we should enter interactive tui mode
+			switch {
+			case HttpServer:
+				// start HTTP server
+				StartHttpServer()
+			case len(SearchString) != 0:
+				NewConsoleSearch()
+			default:
+				NewTuiSearch()
+			}
+
 			return nil
-		}
+		},
+	}
 
-		return internal.NewTuiSearch()
-	},
-}
-
-func main() {
-	// f, _ := os.Create("profile.pprof")
-	// pprof.StartCPUProfile(f)
-	// defer pprof.StopCPUProfile()
-
-	log.Logger = log.Level(zerolog.InfoLevel)
-
-	if err := app.Run(os.Args); err != nil {
-		log.Fatal().Err(err).Msg("app crashed")
+	if err := rootCmd.Run(os.Args); err != nil {
+		log.Fatalln(err.Error())
 	}
 }

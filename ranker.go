@@ -1,14 +1,13 @@
-package internal
+// SPDX-License-Identifier: MIT OR Unlicense
+
+package main
 
 import (
-	"cmp"
 	"math"
-	"slices"
+	"sort"
 	"strings"
 
-	"github.com/boyter/cs/str"
-	"github.com/rprtr258/fun"
-	"github.com/rprtr258/fun/iter"
+	str "github.com/boyter/go-string"
 )
 
 // Takes in the search terms and results and applies chained
@@ -43,6 +42,7 @@ func rankResults(corpusCount int, results []*FileJob) []*FileJob {
 const (
 	LocationBoostValue = 0.05
 	DefaultScoreValue  = 0.01
+	PhraseBoostValue   = 1.00
 	BytesWordDivisor   = 2
 )
 
@@ -54,24 +54,11 @@ func rankResultsLocation(results []*FileJob) []*FileJob {
 	for i := 0; i < len(results); i++ {
 		foundTerms := 0
 		for key := range results[i].MatchLocations {
-			l := str.IndexAllIgnoreCase(results[i].Location, key)
-
-			// If the location is closer to the start boost or rather don't
-			// affect negatively as much because we reduce the score slightly based on
-			// how far away from the start it is
-			low := math.MaxInt32
-			lenL := 0
-			l(func(l [2]int) bool {
-				if l[0] < low {
-					low = l[0]
-				}
-				lenL++
-				return true
-			})
+			l := str.IndexAllIgnoreCase(results[i].Location, key, -1)
 
 			// Boost the rank slightly based on number of matches and on
 			// how long a match it is as we should reward longer matches
-			if lenL > 0 {
+			if len(l) != 0 {
 				foundTerms++
 
 				// If the rank is ever 0 than nothing will change, so set it
@@ -89,7 +76,20 @@ func rankResultsLocation(results []*FileJob) []*FileJob {
 				//
 				// Of course this assumes that they have the text test in the
 				// content otherwise the match is discarded
-				results[i].Score = results[i].Score*(1.0+LocationBoostValue*float64(lenL)*float64(len(key))) - 0.02*float64(low)
+				results[i].Score = results[i].Score * (1.0 +
+					(LocationBoostValue * float64(len(l)) * float64(len(key))))
+
+				// If the location is closer to the start boost or rather don't
+				// affect negatively as much because we reduce the score slightly based on
+				// how far away from the start it is
+				low := math.MaxInt32
+				for _, l := range l {
+					if l[0] < low {
+						low = l[0]
+					}
+				}
+
+				results[i].Score = results[i].Score*1.0 - (float64(low) * 0.02)
 			}
 		}
 
@@ -143,15 +143,15 @@ func rankResultsTFIDF(corpusCount int, results []*FileJob, documentFrequencies m
 			// TF  = number of this words in this document / words in entire document
 			// IDF = number of documents that contain this word
 
-			tf := float64(iter.Count(wordCount)) / words
+			tf := float64(len(wordCount)) / words
 			idf := math.Log10(float64(corpusCount) / float64(documentFrequencies[word]))
 
-			weight += fun.If(
-				classic,
-				tf*idf,
+			if classic {
+				weight += tf * idf
+			} else {
 				// Lucene modification to improve results https://opensourceconnections.com/blog/2015/10/16/bm25-the-next-generation-of-lucene-relevation/
-				math.Sqrt(tf)*idf*(1/math.Sqrt(words)),
-			)
+				weight += math.Sqrt(tf) * idf * (1 / math.Sqrt(words))
+			}
 		}
 
 		// Override the score here because we don't want whatever we got originally
@@ -203,9 +203,10 @@ func rankResultsBM25(corpusCount int, results []*FileJob, documentFrequencies ma
 		// word in the case is the word we are dealing with IE what the user actually searched for
 		// and wordCount is the locations of those words allowing us to know the number of words matching
 		for word, wordCount := range results[i].MatchLocations {
+
 			// TF  = number of this words in this document / words in entire document
 			// IDF = number of documents that contain this word
-			tf := float64(iter.Count(wordCount)) / words
+			tf := float64(len(wordCount)) / words
 			idf := math.Log10(float64(corpusCount) / float64(documentFrequencies[word]))
 
 			step1 := idf * tf * (k1 + 1)
@@ -226,14 +227,14 @@ func rankResultsBM25(corpusCount int, results []*FileJob, documentFrequencies ma
 // Calculate the document term frequency for all words across all documents
 // letting us know how many times a term appears across the corpus
 // This is mostly used for snippet extraction
-func calculateDocumentTermFrequency(results iter.Seq[*FileJob]) map[string]int {
+func calculateDocumentTermFrequency(results []*FileJob) map[string]int {
 	documentFrequencies := map[string]int{}
-	results(func(result *FileJob) bool {
-		for k, v := range result.MatchLocations {
-			documentFrequencies[k] += iter.Count(v)
+	for i := 0; i < len(results); i++ {
+		for k := range results[i].MatchLocations {
+			documentFrequencies[k] = documentFrequencies[k] + len(results[i].MatchLocations[k])
 		}
-		return true
-	})
+	}
+
 	return documentFrequencies
 }
 
@@ -244,9 +245,10 @@ func calculateDocumentFrequency(results []*FileJob) map[string]int {
 	documentFrequencies := map[string]int{}
 	for i := 0; i < len(results); i++ {
 		for k := range results[i].MatchLocations {
-			documentFrequencies[k]++
+			documentFrequencies[k] = documentFrequencies[k] + 1
 		}
 	}
+
 	return documentFrequencies
 }
 
@@ -255,11 +257,11 @@ func calculateDocumentFrequency(results []*FileJob) map[string]int {
 // as since the location includes the filename we should never have two matches
 // that are 100% equal based on the two criteria we use.
 func sortResults(results []*FileJob) {
-	slices.SortFunc(results, func(i, j *FileJob) int {
-		if i.Score != j.Score {
-			return cmp.Compare(i.Score, j.Score)
+	sort.Slice(results, func(i, j int) bool {
+		if results[i].Score == results[j].Score {
+			return strings.Compare(results[i].Location, results[j].Location) < 0
 		}
 
-		return strings.Compare(i.Location, j.Location)
+		return results[i].Score > results[j].Score
 	})
 }

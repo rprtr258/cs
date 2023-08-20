@@ -1,9 +1,20 @@
-package internal
+// SPDX-License-Identifier: MIT OR Unlicense
 
-import (
-	"html/template"
-	"time"
-)
+package main
+
+import "html/template"
+
+type search struct {
+	SearchTerm          string
+	SnippetSize         int
+	Results             []searchResult
+	ResultsCount        int
+	RuntimeMilliseconds int64
+	ProcessedFileCount  int64
+	ExtensionFacet      []facetResult
+	Pages               []pageResult
+	Ext                 string
+}
 
 type pageResult struct {
 	SearchTerm  string
@@ -17,8 +28,15 @@ type searchResult struct {
 	Title    string
 	Location string
 	Content  []template.HTML
-	Pos      [2]int
+	StartPos int
+	EndPos   int
 	Score    float64
+}
+
+type fileDisplay struct {
+	Location            string
+	Content             template.HTML
+	RuntimeMilliseconds int64
 }
 
 type facetResult struct {
@@ -28,26 +46,7 @@ type facetResult struct {
 	SnippetSize int
 }
 
-type search struct {
-	SearchTerm          string
-	SnippetSize         int
-	Results             []searchResult
-	ResultsCount        int
-	RuntimeMilliseconds int64
-	ProcessedFileCount  int
-	ExtensionFacet      []facetResult
-	Pages               []pageResult
-	Ext                 string
-}
-
-type fileDisplay struct {
-	Location            string
-	Content             template.HTML
-	RuntimeMilliseconds time.Duration
-}
-
-var (
-	_httpFileTemplate = template.Must(template.New("display.tmpl").Parse(`<html>
+var httpFileTemplate = `<html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>{{ .Location }}</title>
@@ -95,9 +94,9 @@ var (
 			<pre>{{ .Content }}</pre>
 		</div>
 	</body>
-</html>`))
+</html>`
 
-	_httpSearchTemplate = template.Must(template.New("search.tmpl").Parse(`<html>
+var httpSearchTemplate = `<html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>{{ .SearchTerm }}</title>
@@ -172,5 +171,4 @@ var (
 			{{- end }}
 		</div>
 	</body>
-</html>`))
-)
+</html>`

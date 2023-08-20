@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Unlicense
+
 package main
 
 import (
@@ -6,8 +9,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/boyter/cs/str"
-	"github.com/rprtr258/fun/iter"
+	str "github.com/boyter/go-string"
 )
 
 // Simple test comparison between various search methods
@@ -44,9 +46,9 @@ func main() {
 	fmt.Println("\nIndexAll (custom)")
 	for i := 0; i < 3; i++ {
 		start = time.Now()
-		all := str.IndexAll(haystack, arg1)
+		all := str.IndexAll(haystack, arg1, -1)
 		elapsed = time.Since(start)
-		fmt.Println("Scan took", elapsed, iter.Count(all))
+		fmt.Println("Scan took", elapsed, len(all))
 	}
 
 	r = regexp.MustCompile(`(?i)` + regexp.QuoteMeta(arg1))
@@ -61,8 +63,8 @@ func main() {
 	fmt.Println("\nIndexAllIgnoreCaseUnicode (custom)")
 	for i := 0; i < 3; i++ {
 		start = time.Now()
-		all := str.IndexAllIgnoreCase(haystack, arg1)
+		all := str.IndexAllIgnoreCase(haystack, arg1, -1)
 		elapsed = time.Since(start)
-		fmt.Println("Scan took", elapsed, iter.Count(all))
+		fmt.Println("Scan took", elapsed, len(all))
 	}
 }
