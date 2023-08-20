@@ -3,7 +3,7 @@ package internal
 import (
 	"strings"
 
-	str "github.com/boyter/go-string"
+	"github.com/rprtr258/cs/str"
 )
 
 const (

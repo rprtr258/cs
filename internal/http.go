@@ -14,10 +14,11 @@ import (
 	"strconv"
 	"strings"
 
-	str "github.com/boyter/go-string"
 	"github.com/boyter/gocodewalker"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
+
+	"github.com/rprtr258/cs/str"
 )
 
 func StartHttpServer() error {
@@ -74,7 +75,7 @@ func StartHttpServer() error {
 		fmtBegin := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("begin_%d", nowNanos()))))
 		fmtEnd := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("end_%d", nowNanos()))))
 
-		coloredContent := str.HighlightString(string(content), [][]int{{startPos, endPos}}, fmtBegin, fmtEnd)
+		coloredContent := str.HighlightString(string(content), [][2]int{{startPos, endPos}}, fmtBegin, fmtEnd)
 
 		coloredContent = html.EscapeString(coloredContent)
 		coloredContent = strings.Replace(coloredContent, fmtBegin, fmt.Sprintf(`<strong id="%d">`, startPos), -1)
@@ -202,13 +203,14 @@ func StartHttpServer() error {
 			// we get all the locations that fall in the snippet length
 			// and then remove the length of the snippet cut which
 			// makes out location line up with the snippet size
-			var l [][]int
+			var l [][2]int
 			for _, value := range res.MatchLocations {
 				for _, s := range value {
 					if s[0] >= v3.StartPos && s[1] <= v3.EndPos {
-						s[0] = s[0] - v3.StartPos
-						s[1] = s[1] - v3.StartPos
-						l = append(l, s)
+						l = append(l, [2]int{
+							s[0] - v3.StartPos,
+							s[1] - v3.StartPos,
+						})
 					}
 				}
 			}

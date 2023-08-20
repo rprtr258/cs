@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	str "github.com/boyter/go-string"
+	"github.com/rprtr258/cs/str"
 )
 
 type SearcherWorker struct {

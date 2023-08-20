@@ -5,8 +5,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/boyter/cs/internal"
 	"github.com/urfave/cli/v2"
+
+	"github.com/rprtr258/cs/internal"
 )
 
 const _version = "1.3.0"

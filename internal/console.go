@@ -7,9 +7,9 @@ import (
 	"runtime"
 	"strings"
 
-	str "github.com/boyter/go-string"
 	"github.com/fatih/color"
 	"github.com/mattn/go-isatty"
+	"github.com/rprtr258/cs/str"
 )
 
 func NewConsoleSearch() {
@@ -174,13 +174,14 @@ func (f *ResultSummarizer) formatDefault(results []*FileJob) {
 			// we get all the locations that fall in the snippet length
 			// and then remove the length of the snippet cut which
 			// makes out location line up with the snippet size
-			var l [][]int
+			var l [][2]int
 			for _, value := range res.MatchLocations {
 				for _, s := range value {
 					if s[0] >= snippets[i].StartPos && s[1] <= snippets[i].EndPos {
-						s[0] = s[0] - snippets[i].StartPos
-						s[1] = s[1] - snippets[i].StartPos
-						l = append(l, s)
+						l = append(l, [2]int{
+							s[0] - snippets[i].StartPos,
+							s[1] - snippets[i].StartPos,
+						})
 					}
 				}
 			}

@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	str "github.com/boyter/go-string"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
+	"github.com/rprtr258/cs/str"
 )
 
 type displayResult struct {
@@ -405,16 +405,16 @@ func NewTuiSearch() error {
 		Run()
 }
 
-func getLocated(matchLocations map[string][][]int, v3 Snippet) [][]int {
+func getLocated(matchLocations map[string][][]int, v3 Snippet) [][2]int {
 	// For all the match locations we have only keep the ones that should be inside
 	// where we are matching
-	var l [][]int
+	var l [][2]int
 	for _, value := range matchLocations {
 		for _, s := range value {
 			if s[0] >= v3.StartPos && s[1] <= v3.EndPos {
 				// Have to create a new one to avoid changing the position
 				// unlike in others where we throw away the results afterwards
-				l = append(l, []int{s[0] - v3.StartPos, s[1] - v3.StartPos})
+				l = append(l, [2]int{s[0] - v3.StartPos, s[1] - v3.StartPos})
 			}
 		}
 	}

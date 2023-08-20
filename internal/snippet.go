@@ -6,7 +6,7 @@ import (
 	"slices"
 	"unicode"
 
-	str "github.com/boyter/go-string"
+	"github.com/rprtr258/cs/str"
 )
 
 const (
