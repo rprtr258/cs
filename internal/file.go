@@ -76,6 +76,7 @@ func walkFiles() chan *gocodewalker.File {
 }
 
 // Reads the supplied file into memory, but only up to a certain size
+// TODO: simplify to only second case
 func readFileContent(f *gocodewalker.File) []byte {
 	fi, err := os.Lstat(f.Location)
 	if err != nil {

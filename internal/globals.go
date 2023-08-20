@@ -2,12 +2,13 @@ package internal
 
 import "github.com/urfave/cli/v2"
 
-// Flags set via the CLI which control how the output is displayed
-
-var (
+const (
 	// Verbose enables verbose logging output
 	Verbose = false
+)
 
+// Flags set via the CLI which control how the output is displayed
+var (
 	// Include minified files
 	IncludeMinified = false
 
@@ -63,13 +64,11 @@ var (
 	SnippetCount = 1
 
 	// Include hidden files and directories in search
+	// TODO: unused
 	IncludeHidden = false
 
 	// Address is the address to listen on when in HTTP mode
 	Address string = ":8080"
-
-	// HttpServer indicates if we should fork into HTTP mode or not
-	HttpServer bool = false
 
 	// SearchTemplate is the location to the search page template
 	SearchTemplate = ""

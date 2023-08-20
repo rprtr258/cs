@@ -12,6 +12,9 @@ import (
 
 const _version = "1.3.0"
 
+// _httpServer indicates if we should fork into HTTP mode or not
+var _httpServer = false
+
 var _app = cli.App{
 	Name:    "cs",
 	Version: _version,
@@ -61,7 +64,7 @@ The default input field in tui mode supports some nano commands
 		},
 		&cli.BoolFlag{
 			Name:        "http-server",
-			Destination: &internal.HttpServer,
+			Destination: &_httpServer,
 			Aliases:     []string{"d"},
 			Usage:       "start http server for search",
 		},
@@ -162,12 +165,28 @@ The default input field in tui mode supports some nano commands
 			Aliases:     []string{"f"},
 			Value:       "text",
 			Usage:       "set output format [text, json, vimgrep]",
+			Action: func(_ *cli.Context, s string) error {
+				switch s {
+				case "text", "json", "vimgrep":
+					return nil
+				default:
+					return cli.Exit("invalid format", 1)
+				}
+			},
 		},
 		&cli.StringFlag{
 			Destination: &internal.Ranker,
 			Name:        "ranker",
 			Value:       "bm25",
 			Usage:       "set ranking algorithm [simple, tfidf, tfidf2, bm25]",
+			Action: func(_ *cli.Context, s string) error {
+				switch s {
+				case "simple", "tfidf", "tfidf2", "bm25":
+					return nil
+				default:
+					return cli.Exit("invalid ranker", 1)
+				}
+			},
 		},
 		&cli.StringFlag{
 			Destination: &internal.FileOutput,
@@ -192,7 +211,7 @@ The default input field in tui mode supports some nano commands
 		// If there are arguments we want to print straight out to the console
 		// otherwise we should enter interactive tui mode
 		switch {
-		case internal.HttpServer:
+		case _httpServer:
 			return internal.StartHttpServer()
 		case len(internal.SearchString) != 0:
 			internal.NewConsoleSearch()
