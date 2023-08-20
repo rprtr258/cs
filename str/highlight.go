@@ -30,27 +30,26 @@ func HighlightString(content string, locations [][2]int, in string, out string) 
 		// Find which of the locations match
 		// and if so write the start str
 		if _, ok := highlightCache[i]; ok {
-			for _, val := range locations {
-				// We have a match where the outer index matches
-				// against the val[0] which contains the location of the match
-				if i == val[0] {
-					// We only write the found str once per match and
-					// only if we are not in the middle of one
-					if !found && end <= 0 {
-						str.WriteString(in)
-						found = true
-					}
-
-					// Determine the expected end location for this match
-					// and only if its further than the expected end do we
-					// change to deal with overlaps if say we are trying to match
-					// on t and tes against test where we want tes as the longest
-					// match to be the end that's written
-					y := val[1] - 1 // val[1] in this case is the length of the match
-					if y > end {
-						end = y
-					}
+			for _, location := range locations {
+				if i != location[0] {
+					continue
 				}
+				// We have a match where the outer index matches
+				// against the location[0] which contains the location of the match
+
+				// We only write the found str once per match and
+				// only if we are not in the middle of one
+				if !found && end <= 0 {
+					str.WriteString(in)
+					found = true
+				}
+
+				// Determine the expected end location for this match
+				// and only if its further than the expected end do we
+				// change to deal with overlaps if say we are trying to match
+				// on t and tes against test where we want tes as the longest
+				// match to be the end that's written
+				end = max(end, location[1]-1) // location[1] in this case is the length of the match
 			}
 		}
 
