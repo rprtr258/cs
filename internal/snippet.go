@@ -10,13 +10,13 @@ import (
 )
 
 const (
-	SnipSideMax int = 10 // Defines the maximum bytes either side of the match we are willing to return
+	_snipSideMax int = 10 // Defines the maximum bytes either side of the match we are willing to return
 	// The below are used for adding boosts to match conditions of snippets to hopefully produce the best match
-	PhraseHeavyBoost = 20
-	SpaceBoundBoost  = 5
-	ExactMatchBoost  = 5
+	_phraseHeavyBoost = 20
+	_spaceBoundBoost  = 5
+	_exactMatchBoost  = 5
 	// Below is used to control CPU burn time trying to find the most relevant snippet
-	RelevanceCutoff = 10_000
+	_relevanceCutoff = 10_000
 )
 
 type bestMatch struct {
@@ -83,8 +83,8 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 
 	// if we have a huge amount of matches we want to reduce it because otherwise it takes forever
 	// to return something if the search has many matches.
-	if len(rv3) > RelevanceCutoff {
-		rv3 = rv3[:RelevanceCutoff]
+	if len(rv3) > _relevanceCutoff {
+		rv3 = rv3[:_relevanceCutoff]
 	}
 
 	// Slide around looking for matches that fit in the length
@@ -159,9 +159,10 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 		// Now we see if there are any nearby spaces to avoid us cutting in the
 		// middle of a word if we can avoid it
 		sf := false
+		m.Pos[0], sf = findSpaceLeft(res, m.Pos[0], _snipSideMax)
+
 		ef := false
-		m.Pos[0], sf = findSpaceLeft(res, m.Pos[0], SnipSideMax)
-		m.Pos[1], ef = findSpaceRight(res, m.Pos[1], SnipSideMax)
+		m.Pos[1], ef = findSpaceRight(res, m.Pos[1], _snipSideMax)
 
 		// Check if we are cutting in the middle of a multibyte char and if so
 		// go looking till we find the start. We only do so if we didn't find a space,
@@ -174,7 +175,7 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 		}
 
 		// If we are very close to the start, just push it out so we get the actual start
-		if m.Pos[0] <= SnipSideMax {
+		if m.Pos[0] <= _snipSideMax {
 			m.Pos[0] = 0
 		}
 		// As above, but against the end so we just include the rest if we are close
@@ -209,24 +210,24 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 			// Use 2 here because we want to avoid punctuation such that a search for
 			// cat dog will still be boosted if we find cat. dog
 			if abs(rv3[i].Pos[0]-v.Pos[1]) <= 2 || abs(rv3[i].Pos[1]-v.Pos[0]) <= 2 {
-				m.Score += PhraseHeavyBoost
+				m.Score += _phraseHeavyBoost
 			}
 		}
 
 		// If the match is bounded by a space boost it slightly
 		// because its likely to be a better match
 		if rv3[i].Pos[0] >= 1 && unicode.IsSpace(rune(res.Content[rv3[i].Pos[0]-1])) {
-			m.Score += SpaceBoundBoost
+			m.Score += _spaceBoundBoost
 		}
 		if rv3[i].Pos[1] < len(res.Content)-1 && unicode.IsSpace(rune(res.Content[rv3[i].Pos[1]+1])) {
-			m.Score += SpaceBoundBoost
+			m.Score += _spaceBoundBoost
 		}
 
 		// If the word is an exact match to what the user typed boost it
 		// So while the search may be case insensitive the ranking of
 		// the snippet does consider case when boosting ever so slightly
 		if string(res.Content[rv3[i].Pos[0]:rv3[i].Pos[1]]) == rv3[i].Word {
-			m.Score += ExactMatchBoost
+			m.Score += _exactMatchBoost
 		}
 
 		// This mod applies over the whole score because we want to most unique words to appear in the middle
