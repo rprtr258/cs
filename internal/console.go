@@ -117,13 +117,14 @@ func (f *ResultSummarizer) formatJson(results []*FileJob) {
 		// we get all the locations that fall in the snippet length
 		// and then remove the length of the snippet cut which
 		// makes out location line up with the snippet size
-		var l [][]int
+		var l [][2]int
 		for _, value := range res.MatchLocations {
 			for _, s := range value {
 				if s[0] >= v3.Pos[0] && s[1] <= v3.Pos[1] {
-					s[0] = s[0] - v3.Pos[0]
-					s[1] = s[1] - v3.Pos[0]
-					l = append(l, s)
+					l = append(l, [2]int{
+						s[0] - v3.Pos[0],
+						s[1] - v3.Pos[0],
+					})
 				}
 			}
 		}
@@ -207,9 +208,9 @@ func (f *ResultSummarizer) formatDefault(results []*FileJob) {
 }
 
 type jsonResult struct {
-	Filename       string  `json:"filename"`
-	Location       string  `json:"location"`
-	Content        string  `json:"content"`
-	Score          float64 `json:"score"`
-	MatchLocations [][]int `json:"matchlocations"`
+	Filename       string   `json:"filename"`
+	Location       string   `json:"location"`
+	Content        string   `json:"content"`
+	Score          float64  `json:"score"`
+	MatchLocations [][2]int `json:"matchlocations"`
 }
