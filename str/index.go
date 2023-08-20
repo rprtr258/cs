@@ -238,10 +238,7 @@ func IndexAllIgnoreCase(haystack string, needle string, limit int) [][2]int {
 
 				// Because the length of the needle might be different to what we just found as a match
 				// based on byte size we add enough extra on the end to deal with the difference
-				e := len(needle) + len(needle) - 1
-				for match[0]+e > len(haystack) {
-					e--
-				}
+				e := min(len(needle)+len(needle)-1, len(haystack)-match[0])
 
 				// Cut off the number at the end to the number we need which is the length of the needle runes
 				toMatchRune := []rune(haystack[match[0] : match[0]+e])
