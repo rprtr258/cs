@@ -146,10 +146,6 @@ func StartHttpServer() error {
 			fileReaderWorker := NewFileReaderWorker(files, toProcessQueue, fuzzy)
 			fileSearcher := NewSearcherWorker(toProcessQueue, summaryQueue, q)
 
-			resultSummarizer := NewResultSummarizer(summaryQueue)
-			resultSummarizer.FileReaderWorker = fileReaderWorker
-			resultSummarizer.SnippetCount = SnippetCount
-
 			go fileReaderWorker.Start()
 			go fileSearcher.Start()
 

@@ -23,9 +23,7 @@ func NewConsoleSearch() {
 
 	fileSearcher := NewSearcherWorker(toProcessQueue, summaryQueue, query)
 
-	resultSummarizer := NewResultSummarizer(summaryQueue)
-	resultSummarizer.FileReaderWorker = fileReaderWorker
-	resultSummarizer.SnippetCount = SnippetCount
+	resultSummarizer := NewResultSummarizer(summaryQueue, fileReaderWorker, SnippetCount)
 
 	go fileReaderWorker.Start()
 	go fileSearcher.Start()
@@ -42,14 +40,15 @@ type ResultSummarizer struct {
 	FileOutput       string
 }
 
-func NewResultSummarizer(input chan *FileJob) ResultSummarizer {
+func NewResultSummarizer(input chan *FileJob, fileReaderWorker *FileReaderWorker, SnippetCount int64) ResultSummarizer {
 	return ResultSummarizer{
-		input:        input,
-		ResultLimit:  -1,
-		SnippetCount: 1,
-		NoColor:      os.Getenv("TERM") == "dumb" || (!isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd())),
-		Format:       Format,
-		FileOutput:   FileOutput,
+		input:            input,
+		ResultLimit:      -1,
+		SnippetCount:     SnippetCount,
+		NoColor:          os.Getenv("TERM") == "dumb" || (!isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd())),
+		Format:           Format,
+		FileOutput:       FileOutput,
+		FileReaderWorker: fileReaderWorker,
 	}
 }
 
