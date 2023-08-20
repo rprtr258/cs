@@ -95,7 +95,7 @@ var (
 	</body>
 </html>`))
 
-	_templateHTMLSearch = `<html>
+	_templateHTMLSearch = template.Must(template.New("search.tmpl").Parse(`<html>
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>{{ .SearchTerm }}</title>
@@ -170,5 +170,5 @@ var (
 			{{- end }}
 		</div>
 	</body>
-</html>`
+</html>`))
 )

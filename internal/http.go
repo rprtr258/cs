@@ -90,6 +90,12 @@ func StartHttpServer() error {
 		}
 	})
 
+	templateSearch := _templateHTMLSearch
+	if SearchTemplate != "" {
+		// If we have been supplied a template then load it up
+		templateSearch = template.Must(template.New("search.tmpl").ParseFiles(SearchTemplate))
+	}
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		startTime := nowMillis()
 		query := r.URL.Query().Get("q")
@@ -119,15 +125,13 @@ func StartHttpServer() error {
 			if strings.TrimSpace(Directory) != "" {
 				DirFilePaths = []string{Directory}
 			}
-
 			if FindRoot {
 				DirFilePaths[0] = gocodewalker.FindRepositoryRoot(DirFilePaths[0])
 			}
 
+			AllowListExtensions = cli.NewStringSlice()
 			if len(ext) != 0 {
 				AllowListExtensions = cli.NewStringSlice(ext)
-			} else {
-				AllowListExtensions = cli.NewStringSlice()
 			}
 
 			// walk back through the query to see if we have a shorter one that matches
@@ -230,13 +234,7 @@ func StartHttpServer() error {
 			})
 		}
 
-		t := template.Must(template.New("search.tmpl").Parse(_templateHTMLSearch))
-		if SearchTemplate != "" {
-			// If we have been supplied a template then load it up
-			t = template.Must(template.New("search.tmpl").ParseFiles(SearchTemplate))
-		}
-
-		err := t.Execute(w, search{
+		err := templateSearch.Execute(w, search{
 			SearchTerm:          query,
 			SnippetSize:         snippetLength,
 			Results:             searchResults,
