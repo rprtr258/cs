@@ -62,7 +62,7 @@ func HighlightString(content string, locations [][2]int, in string, out string) 
 			end = 0
 		}
 
-		str.WriteString(string(x))
+		str.WriteRune(x)
 
 		// If at the end, and its not -1 meaning the first char
 		// which should never happen (I hope!) then write the end str
