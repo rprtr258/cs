@@ -11,11 +11,12 @@ func FuzzIndexAllIgnoreCase(f *testing.F) {
 		Count    int
 	}
 
-	testcases := []caseType{{
-		Haystack: testUnicodeMatchEndCaseLarge,
-		Needle:   testUnicodeMatchEndCaseLarge[:5],
-		Count:    9,
-	},
+	testcases := []caseType{
+		{
+			Haystack: testUnicodeMatchEndCaseLarge,
+			Needle:   testUnicodeMatchEndCaseLarge[:5],
+			Count:    9,
+		},
 		{
 			Haystack: testMatchEndCaseLarge,
 			Needle:   testUnicodeMatchEndCaseLarge[:9],
