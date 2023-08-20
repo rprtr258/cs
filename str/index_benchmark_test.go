@@ -2,6 +2,7 @@ package str
 
 import (
 	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -153,15 +154,11 @@ func BenchmarkIndexAllUnicodeManyPartialMatches(b *testing.B) {
 	}
 }
 
+var _large101 = strings.Repeat(testUnicodeMatchEndCaseLarge, 101)
+
 func BenchmarkFindAllIndexUnicodeManyPartialMatchesVeryLarge(b *testing.B) {
 	r := regexp.MustCompile(`Ⱥtest`)
-
-	var large string
-	for i := 0; i <= 100; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
-
-	haystack := []byte(large)
+	haystack := []byte(_large101)
 
 	for i := 0; i < b.N; i++ {
 		matches := r.FindAllIndex(haystack, -1)
@@ -172,28 +169,19 @@ func BenchmarkFindAllIndexUnicodeManyPartialMatchesVeryLarge(b *testing.B) {
 }
 
 func BenchmarkIndexAllUnicodeManyPartialMatchesVeryLarge(b *testing.B) {
-	var large string
-	for i := 0; i <= 100; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
-
 	for i := 0; i < b.N; i++ {
-		matches := IndexAll(large, "Ⱥtest", -1)
+		matches := IndexAll(_large101, "Ⱥtest", -1)
 		if len(matches) != 101 {
 			b.Error("Expected 101 match got", len(matches))
 		}
 	}
 }
 
+var _large501 = strings.Repeat(testUnicodeMatchEndCaseLarge, 501)
+
 func BenchmarkFindAllIndexUnicodeManyPartialMatchesSuperLarge(b *testing.B) {
 	r := regexp.MustCompile(`Ⱥtest`)
-
-	var large string
-	for i := 0; i <= 500; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
-
-	haystack := []byte(large)
+	haystack := []byte(_large501)
 
 	for i := 0; i < b.N; i++ {
 		matches := r.FindAllIndex(haystack, -1)
@@ -204,13 +192,8 @@ func BenchmarkFindAllIndexUnicodeManyPartialMatchesSuperLarge(b *testing.B) {
 }
 
 func BenchmarkIndexAllUnicodeManyPartialMatchesSuperLarge(b *testing.B) {
-	var large string
-	for i := 0; i <= 500; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
-
 	for i := 0; i < b.N; i++ {
-		matches := IndexAll(large, "Ⱥtest", -1)
+		matches := IndexAll(_large501, "Ⱥtest", -1)
 		if len(matches) != 501 {
 			b.Error("Expected 501 match got", len(matches))
 		}
