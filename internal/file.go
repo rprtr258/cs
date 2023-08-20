@@ -82,32 +82,28 @@ func readFileContent(f *gocodewalker.File) []byte {
 		return nil
 	}
 
-	var content []byte
-
 	// Only read up to point of a file because anything beyond that is probably pointless
 	if fi.Size() < int64(MaxReadSizeBytes) {
-		var err error
-		content, err = os.ReadFile(f.Location)
+		content, err := os.ReadFile(f.Location)
 		if err != nil {
 			return nil
 		}
-	} else {
-		fil, err := os.Open(f.Location)
-		if err != nil {
-			return nil
-		}
-		defer fil.Close()
-
-		byteSlice := make([]byte, MaxReadSizeBytes)
-		_, err = fil.Read(byteSlice)
-		if err != nil {
-			return nil
-		}
-
-		content = byteSlice
+		return content
 	}
 
-	return content
+	fil, err := os.Open(f.Location)
+	if err != nil {
+		return nil
+	}
+	defer fil.Close()
+
+	byteSlice := make([]byte, MaxReadSizeBytes)
+	_, err = fil.Read(byteSlice)
+	if err != nil {
+		return nil
+	}
+
+	return byteSlice
 }
 
 // Given a file to read will read the contents into memory and determine if we should process it
