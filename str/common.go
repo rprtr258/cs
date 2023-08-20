@@ -10,16 +10,14 @@ import (
 // RemoveStringDuplicates is a simple helper method that removes duplicates from
 // any given str slice and then returns a nice duplicate free str slice
 func RemoveStringDuplicates(elements []string) []string {
-	encountered := map[string]bool{}
+	encountered := map[string]struct{}{}
 	var result []string
-
 	for v := range elements {
-		if !encountered[elements[v]] {
-			encountered[elements[v]] = true
+		if _, ok := encountered[elements[v]]; !ok {
+			encountered[elements[v]] = struct{}{}
 			result = append(result, elements[v])
 		}
 	}
-
 	return result
 }
 

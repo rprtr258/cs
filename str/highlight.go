@@ -18,9 +18,9 @@ func HighlightString(content string, locations [][2]int, in string, out string) 
 
 	// Profiles show that most time is spent looking against the locations
 	// so we generated a cache quickly to speed that process up
-	highlightCache := map[int]bool{}
+	highlightCache := map[int]struct{}{}
 	for _, val := range locations {
-		highlightCache[val[0]] = true
+		highlightCache[val[0]] = struct{}{}
 	}
 
 	// Range over str which is rune aware so even if we get invalid
@@ -29,10 +29,9 @@ func HighlightString(content string, locations [][2]int, in string, out string) 
 	for i, x := range content {
 		found = false
 
-		_, ok := highlightCache[i]
 		// Find which of the locations match
 		// and if so write the start str
-		if ok {
+		if _, ok := highlightCache[i]; ok {
 			for _, val := range locations {
 				// We have a match where the outer index matches
 				// against the val[0] which contains the location of the match
