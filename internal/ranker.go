@@ -1,8 +1,9 @@
 package internal
 
 import (
+	"cmp"
 	"math"
-	"sort"
+	"slices"
 	"strings"
 
 	str "github.com/boyter/go-string"
@@ -255,11 +256,11 @@ func calculateDocumentFrequency(results []*FileJob) map[string]int {
 // as since the location includes the filename we should never have two matches
 // that are 100% equal based on the two criteria we use.
 func sortResults(results []*FileJob) {
-	sort.Slice(results, func(i, j int) bool {
-		if results[i].Score == results[j].Score {
-			return strings.Compare(results[i].Location, results[j].Location) < 0
+	slices.SortFunc(results, func(i, j *FileJob) int {
+		if i.Score != j.Score {
+			return cmp.Compare(j.Score, i.Score)
 		}
 
-		return results[i].Score > results[j].Score
+		return strings.Compare(i.Location, j.Location)
 	})
 }

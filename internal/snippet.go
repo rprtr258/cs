@@ -2,7 +2,8 @@ package internal
 
 import (
 	"bytes"
-	"sort"
+	"cmp"
+	"slices"
 	"unicode"
 
 	str "github.com/boyter/go-string"
@@ -241,8 +242,8 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 	}
 
 	// Sort our matches by score such that tbe best snippets are at the top
-	sort.Slice(bestMatches, func(i, j int) bool {
-		return bestMatches[i].Score > bestMatches[j].Score
+	slices.SortFunc(bestMatches, func(i, j bestMatch) int {
+		return cmp.Compare(j.Score, i.Score)
 	})
 
 	// Now what we have it sorted lets get just the ones that don't overlap so we have all the unique snippets
@@ -318,8 +319,8 @@ func convertToRelevant(res *FileJob) []relevantV3 {
 	}
 
 	// Sort the results so when we slide around everything is in order
-	sort.Slice(rv3, func(i, j int) bool {
-		return rv3[i].Start < rv3[j].Start
+	slices.SortFunc(rv3, func(i, j relevantV3) int {
+		return cmp.Compare(i.Start, j.Start)
 	})
 
 	return rv3
