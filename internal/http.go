@@ -19,7 +19,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func StartHttpServer() {
+func StartHttpServer() error {
 	http.HandleFunc("/file/raw/", func(w http.ResponseWriter, r *http.Request) {
 		path := strings.Replace(r.URL.Path, "/file/raw/", "", 1)
 
@@ -256,12 +256,11 @@ func StartHttpServer() {
 	})
 
 	log.Info().Str("unique_code", "03148801").Str("address", Address).Msg("ready to serve requests")
-	log.Fatal().Msg(http.ListenAndServe(Address, nil).Error())
+	return http.ListenAndServe(Address, nil)
 }
 
 func calculateExtensionFacet(extensionFacets map[string]int, query string, snippetLength int) []facetResult {
-	var ef []facetResult
-
+	ef := make([]facetResult, 0, len(extensionFacets))
 	for k, v := range extensionFacets {
 		ef = append(ef, facetResult{
 			Title:       k,

@@ -261,7 +261,7 @@ var (
 // setup debounce to improve ui feel
 var debounced = NewDebouncer(200 * time.Millisecond)
 
-func NewTuiSearch() {
+func NewTuiSearch() error {
 	// start indexing by walking from the current directory and updating
 	// this needs to run in the background with searches spawning from that
 	tviewApplication = tview.NewApplication()
@@ -399,9 +399,10 @@ func NewTuiSearch() {
 		AddItem(statusView, 1, 0, false).
 		AddItem(resultsFlex, 0, 1, false)
 
-	if err := tviewApplication.SetRoot(overallFlex, true).SetFocus(inputField).Run(); err != nil {
-		panic(err)
-	}
+	return tviewApplication.
+		SetRoot(overallFlex, true).
+		SetFocus(inputField).
+		Run()
 }
 
 func getLocated(matchLocations map[string][][]int, v3 Snippet) [][]int {

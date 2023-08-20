@@ -192,14 +192,13 @@ The default input field in tui mode supports some nano commands
 		// otherwise we should enter interactive tui mode
 		switch {
 		case internal.HttpServer:
-			internal.StartHttpServer()
+			return internal.StartHttpServer()
 		case len(internal.SearchString) != 0:
 			internal.NewConsoleSearch()
+			return nil
 		default:
-			internal.NewTuiSearch()
+			return internal.NewTuiSearch()
 		}
-
-		return nil
 	},
 }
 
