@@ -77,7 +77,6 @@ type Snippet struct {
 // as the internals will be modified to produce better results where possible
 func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLength int) []Snippet {
 	wrapLength := relLength / 2
-	var bestMatches []bestMatch
 
 	rv3 := convertToRelevant(res)
 
@@ -85,6 +84,7 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 	// to return something if the search has many matches.
 	rv3 = rv3[:min(len(rv3), _relevanceCutoff)]
 
+	var bestMatches []bestMatch
 	// Slide around looking for matches that fit in the length
 	for i := 0; i < len(rv3); i++ {
 		m := bestMatch{
@@ -95,13 +95,10 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 		// Slide left
 		// Ensure we never step outside the bounds of our slice
 		for j := i - 1; j >= 0; j-- {
-
 			// How close is the matches start to our end?
-			diff := rv3[i].Location[1] - rv3[j].Location[0]
-
 			// If the diff is greater than the target then break out as there is no
 			// more reason to keep looking as the slice is sorted
-			if diff > wrapLength {
+			if rv3[i].Location[1]-rv3[j].Location[0] > wrapLength {
 				break
 			}
 
@@ -114,11 +111,9 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 		// Ensure we never step outside the bounds of our slice
 		for j := i + 1; j < len(rv3); j++ {
 			// How close is the matches end to our start?
-			diff := rv3[j].Location[1] - rv3[i].Location[0]
-
 			// If the diff is greater than the target then break out as there is no
 			// more reason to keep looking as the slice is sorted
-			if diff > wrapLength {
+			if rv3[j].Location[1]-rv3[i].Location[0] > wrapLength {
 				break
 			}
 
@@ -238,7 +233,7 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 		}
 
 		if !isOverlap {
-			ranges = append(ranges, [2]int{b.Pos[0], b.Pos[1]})
+			ranges = append(ranges, b.Pos)
 			bestMatchesClean = append(bestMatchesClean, b)
 		}
 	}
