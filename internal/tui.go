@@ -16,6 +16,15 @@ import (
 	"github.com/rprtr258/cs/str"
 )
 
+func digitsCount(n int) int {
+	res := 0
+	for n > 0 {
+		n /= 10
+		res++
+	}
+	return res
+}
+
 type displayResult struct {
 	Title      *tview.TextView
 	Body       *tview.TextView
@@ -129,22 +138,20 @@ func (cont *tuiApplicationController) drawView() {
 		coloredContent = strings.Replace(coloredContent, fmtBegin, "[red]", -1)
 		coloredContent = strings.Replace(coloredContent, fmtEnd, "[white]", -1)
 
-		maxLineNumberLen := 0
-		maxLineNumber := snippet.LineEnd
-		for maxLineNumber > 0 {
-			maxLineNumber /= 10
-			maxLineNumberLen++
-		}
+		maxLineNumberLen := digitsCount(snippet.LinePos[1])
 
 		lines := strings.Split(coloredContent, "\n")
 		for i, line := range lines {
-			lines[i] = fmt.Sprintf("[gray]%"+strconv.Itoa(maxLineNumberLen)+"d", snippet.LineStart+i) + ".[white] " + line
+			lines[i] = fmt.Sprintf(
+				"[gray]%"+strconv.Itoa(maxLineNumberLen)+"d.[white] %s",
+				snippet.LinePos[0]+i,
+				line,
+			)
 		}
-		coloredContent = strings.Join(lines, "\n")
 
 		codeResults = append(codeResults, codeResult{
 			Title:    res.Location,
-			Content:  coloredContent,
+			Content:  strings.Join(lines, "\n"),
 			Score:    res.Score,
 			Location: res.Location,
 		})

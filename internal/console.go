@@ -96,7 +96,7 @@ func (f *ResultSummarizer) formatVimGrep(results []*FileJob) {
 
 		for _, snip := range snippets {
 			hint := strings.ReplaceAll(snip.Content, "\n", "\\n")
-			line := fmt.Sprintf("%v:%v:%v:%v", res.Location, snip.LineStart, snip.Pos[0], hint)
+			line := fmt.Sprintf("%v:%v:%v:%v", res.Location, snip.LinePos[0], snip.Pos[0], hint)
 			vimGrepOutput = append(vimGrepOutput, line)
 		}
 	}
@@ -165,7 +165,7 @@ func (f *ResultSummarizer) formatDefault(results []*FileJob) {
 
 		lines := ""
 		for i := 0; i < len(snippets); i++ {
-			lines += fmt.Sprintf("%d-%d ", snippets[i].LineStart, snippets[i].LineEnd)
+			lines += fmt.Sprintf("%d-%d ", snippets[i].LinePos[0], snippets[i].LinePos[1])
 		}
 
 		color.Magenta(fmt.Sprintf("%s Lines %s(%.3f)", res.Location, lines, res.Score))

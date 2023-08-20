@@ -32,11 +32,10 @@ type relevantV3 struct {
 }
 
 type Snippet struct {
-	Content   string
-	Pos       [2]int
-	Score     float64
-	LineStart int
-	LineEnd   int
+	Content string
+	Pos     [2]int
+	Score   float64
+	LinePos [2]int
 }
 
 // Looks through the locations using a sliding window style algorithm
@@ -283,11 +282,10 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 		}
 
 		snippets = append(snippets, Snippet{
-			Content:   string(res.Content[b.Pos[0]:b.Pos[1]]),
-			Pos:       [2]int{b.Pos[0], b.Pos[1]},
-			Score:     b.Score,
-			LineStart: startLineOffset,
-			LineEnd:   contentLineOffset,
+			Content: string(res.Content[b.Pos[0]:b.Pos[1]]),
+			Pos:     [2]int{b.Pos[0], b.Pos[1]},
+			Score:   b.Score,
+			LinePos: [2]int{startLineOffset, contentLineOffset},
 		})
 	}
 
