@@ -244,7 +244,7 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 
 	// Now what we have it sorted lets get just the ones that don't overlap so we have all the unique snippets
 	var bestMatchesClean []bestMatch
-	var ranges [][]int
+	var ranges [][2]int
 	for _, b := range bestMatches {
 		isOverlap := false
 		for _, r := range ranges {
@@ -258,7 +258,7 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 		}
 
 		if !isOverlap {
-			ranges = append(ranges, []int{b.Pos[0], b.Pos[1]})
+			ranges = append(ranges, [2]int{b.Pos[0], b.Pos[1]})
 			bestMatchesClean = append(bestMatchesClean, b)
 		}
 	}
