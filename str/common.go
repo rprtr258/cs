@@ -50,9 +50,9 @@ func PermuteCaseFolding(input string) []string {
 
 	var combos []string
 	for _, combo := range combinations {
-		for index, runeValue := range combo {
+		for i, runeValue := range combo {
 			for _, p := range AllSimpleFold(runeValue) {
-				combos = append(combos, combo[:index]+string(p)+combo[index+len(string(runeValue)):])
+				combos = append(combos, combo[:i]+string(p)+combo[i+len(string(runeValue)):])
 			}
 		}
 	}
@@ -62,17 +62,12 @@ func PermuteCaseFolding(input string) []string {
 // AllSimpleFold given an input rune return a rune slice containing
 // all of the possible simple fold
 func AllSimpleFold(origin rune) []rune {
-	c := origin
 	res := []rune{origin}
 	// This works for getting all folded representations
 	// but feels totally wrong due to the bailout break.
 	// That said its simpler than a while with checks
 	// Investigate https://github.com/golang/go/blob/master/src/regexp/syntax/prog.go#L215 as a possible way to implement
-	for i := 0; i < 255; i++ {
-		c = unicode.SimpleFold(c)
-		if c == origin {
-			break
-		}
+	for c, i := unicode.SimpleFold(origin), 0; i < 255 && c != origin; c, i = unicode.SimpleFold(c), i+1 {
 		res = append(res, c)
 	}
 	return res
