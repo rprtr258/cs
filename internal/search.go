@@ -55,8 +55,9 @@ func ParseQuery(args []string) []searchParams {
 
 	// With the arguments cleaned up parse out what we need
 	// note that this is very ugly
-	for ind, arg := range cleanArgs {
-		if strings.HasPrefix(arg, `"`) {
+	for i, arg := range cleanArgs {
+		switch {
+		case strings.HasPrefix(arg, `"`):
 			if len(arg) != 1 {
 				if strings.HasSuffix(arg, `"`) {
 					params = append(params, searchParams{
@@ -65,17 +66,17 @@ func ParseQuery(args []string) []searchParams {
 					})
 				} else {
 					mode = Quoted
-					startIndex = ind
+					startIndex = i
 				}
 			}
-		} else if mode == Quoted && strings.HasSuffix(arg, `"`) {
-			t := strings.Join(cleanArgs[startIndex:ind+1], " ")
+		case mode == Quoted && strings.HasSuffix(arg, `"`):
+			t := strings.Join(cleanArgs[startIndex:i+1], " ")
 			params = append(params, searchParams{
 				Term: t[1 : len(t)-1],
 				Type: Quoted,
 			})
 			mode = Default
-		} else if strings.HasPrefix(arg, `/`) {
+		case strings.HasPrefix(arg, `/`):
 			if len(arg) != 1 {
 				// If we end with / not prefixed with a \ we are done
 				if strings.HasSuffix(arg, `/`) {
@@ -93,35 +94,35 @@ func ParseQuery(args []string) []searchParams {
 					}
 				} else {
 					mode = Regex
-					startIndex = ind
+					startIndex = i
 				}
 			}
-		} else if mode == Regex && strings.HasSuffix(arg, `/`) {
-			t := strings.Join(cleanArgs[startIndex:ind+1], " ")
+		case mode == Regex && strings.HasSuffix(arg, `/`):
+			t := strings.Join(cleanArgs[startIndex:i+1], " ")
 			params = append(params, searchParams{
 				Term: t[1 : len(t)-1],
 				Type: Regex,
 			})
 			mode = Default
-		} else if arg == "NOT" {
+		case arg == "NOT":
 			// If we start with NOT we cannot negate so ignore
-			if ind != 0 {
+			if i != 0 {
 				params = append(params, searchParams{
 					Term: arg,
 					Type: Negated,
 				})
 			}
-		} else if strings.HasSuffix(arg, "~1") {
+		case strings.HasSuffix(arg, "~1"):
 			params = append(params, searchParams{
 				Term: strings.TrimRight(arg, "~1"),
 				Type: Fuzzy1,
 			})
-		} else if strings.HasSuffix(arg, "~2") {
+		case strings.HasSuffix(arg, "~2"):
 			params = append(params, searchParams{
 				Term: strings.TrimRight(arg, "~2"),
 				Type: Fuzzy2,
 			})
-		} else {
+		default:
 			params = append(params, searchParams{
 				Term: arg,
 				Type: Default,
