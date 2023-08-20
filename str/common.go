@@ -29,16 +29,16 @@ func PermuteCase(input string) []string {
 
 	var combinations []string
 	for i := 0; i < max; i++ {
-		s := ""
+		var sb strings.Builder
 		for j, ch := range input {
 			if i&(1<<j) == 0 {
-				s += strings.ToUpper(string(ch))
+				sb.WriteRune(unicode.ToUpper(ch))
 			} else {
-				s += strings.ToLower(string(ch))
+				sb.WriteRune(unicode.ToLower(ch))
 			}
 		}
 
-		combinations = append(combinations, s)
+		combinations = append(combinations, sb.String())
 	}
 	return RemoveStringDuplicates(combinations)
 }
