@@ -242,9 +242,10 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 	for _, b := range bestMatches {
 		isOverlap := false
 		for _, r := range ranges {
-			if b.Pos[0] >= r[0] && b.Pos[0] <= r[1] ||
-				b.Pos[1] >= r[0] && b.Pos[1] <= r[1] {
+			if r[0] <= b.Pos[0] && b.Pos[0] <= r[1] ||
+				r[0] <= b.Pos[1] && b.Pos[1] <= r[1] {
 				isOverlap = true
+				break
 			}
 		}
 
@@ -255,12 +256,10 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 	}
 
 	// Limit to the 20 best matches
-	if len(bestMatchesClean) > 20 {
-		bestMatchesClean = bestMatchesClean[:20]
-	}
+	bestMatchesClean = bestMatchesClean[:min(len(bestMatchesClean), 20)]
 
-	var snippets []Snippet
-	for _, b := range bestMatchesClean {
+	snippets := make([]Snippet, len(bestMatchesClean))
+	for i, b := range bestMatchesClean {
 		index := bytes.Index(res.Content, res.Content[b.Pos[0]:b.Pos[1]])
 		startLineOffset := 1
 		for i := 0; i < index; i++ {
@@ -276,12 +275,12 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 			}
 		}
 
-		snippets = append(snippets, Snippet{
+		snippets[i] = Snippet{
 			Content: string(res.Content[b.Pos[0]:b.Pos[1]]),
 			Pos:     [2]int{b.Pos[0], b.Pos[1]},
 			Score:   b.Score,
 			LinePos: [2]int{startLineOffset, contentLineOffset},
-		})
+		}
 	}
 
 	return snippets
