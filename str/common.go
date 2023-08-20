@@ -46,13 +46,11 @@ func PermuteCase(input string) []string {
 // PermuteCaseFolding given a str returns a slice containing all possible case permutations
 // with characters being folded such that S will return S s ſ
 func PermuteCaseFolding(input string) []string {
-	combinations := PermuteCase(input)
-
 	var combos []string
-	for _, combo := range combinations {
-		for i, runeValue := range combo {
-			for _, p := range AllSimpleFold(runeValue) {
-				combos = append(combos, combo[:i]+string(p)+combo[i+len(string(runeValue)):])
+	for _, combo := range PermuteCase(input) {
+		for i, ch := range combo {
+			for _, p := range AllSimpleFold(ch) {
+				combos = append(combos, combo[:i]+string(p)+combo[i+len(string(ch)):])
 			}
 		}
 	}
