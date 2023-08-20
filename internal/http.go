@@ -46,13 +46,11 @@ func StartHttpServer() error {
 			Str("path", path).
 			Msg("file view page")
 
-		var content []byte
-		var err error
-
 		if strings.TrimSpace(Directory) != "" {
 			path = "/" + path
 		}
-		content, err = os.ReadFile(path)
+
+		content, err := os.ReadFile(path)
 		if err != nil {
 			log.Error().
 				Caller().
