@@ -27,8 +27,8 @@ type bestMatch struct {
 
 // Internal structure used just for matching things together
 type relevantV3 struct {
-	Word string
-	Pos  [2]int
+	Word     string
+	Location [2]int
 }
 
 type Snippet struct {
@@ -90,7 +90,7 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 	// Slide around looking for matches that fit in the length
 	for i := 0; i < len(rv3); i++ {
 		m := bestMatch{
-			Pos:      rv3[i].Pos,
+			Pos:      rv3[i].Location,
 			Relevant: []relevantV3{rv3[i]},
 		}
 
@@ -103,7 +103,7 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 			}
 
 			// How close is the matches start to our end?
-			diff := rv3[i].Pos[1] - rv3[j].Pos[0]
+			diff := rv3[i].Location[1] - rv3[j].Location[0]
 
 			// If the diff is greater than the target then break out as there is no
 			// more reason to keep looking as the slice is sorted
@@ -112,7 +112,7 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 			}
 
 			// If we didn't break this is considered a larger match
-			m.Pos[0] = rv3[j].Pos[0]
+			m.Pos[0] = rv3[j].Location[0]
 			m.Relevant = append(m.Relevant, rv3[j])
 			j--
 		}
@@ -126,7 +126,7 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 			}
 
 			// How close is the matches end to our start?
-			diff := rv3[j].Pos[1] - rv3[i].Pos[0]
+			diff := rv3[j].Location[1] - rv3[i].Location[0]
 
 			// If the diff is greater than the target then break out as there is no
 			// more reason to keep looking as the slice is sorted
@@ -134,7 +134,7 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 				break
 			}
 
-			m.Pos[1] = rv3[j].Pos[1]
+			m.Pos[1] = rv3[j].Location[1]
 			m.Relevant = append(m.Relevant, rv3[j])
 			j++
 		}
@@ -186,9 +186,9 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 
 		// Apply higher score where the words are near each other
 		// mid := rv3[i].Start + (rv3[i].End-rv3[i].End)/2 // match word midpoint
-		mid := rv3[i].Pos[0]
+		mid := rv3[i].Location[0]
 		for _, v := range m.Relevant {
-			p := v.Pos[0] + (v.Pos[1]-v.Pos[0])/2 // comparison word midpoint
+			p := (v.Location[0] + v.Location[1]) / 2 // comparison word midpoint
 
 			// If the word is within a reasonable distance of this word boost the score
 			// weighted by how common that word is so that matches like 'a' impact the rank
@@ -203,24 +203,24 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 		for _, v := range m.Relevant {
 			// Use 2 here because we want to avoid punctuation such that a search for
 			// cat dog will still be boosted if we find cat. dog
-			if abs(rv3[i].Pos[0]-v.Pos[1]) <= 2 || abs(rv3[i].Pos[1]-v.Pos[0]) <= 2 {
+			if abs(rv3[i].Location[0]-v.Location[1]) <= 2 || abs(rv3[i].Location[1]-v.Location[0]) <= 2 {
 				m.Score += _phraseHeavyBoost
 			}
 		}
 
 		// If the match is bounded by a space boost it slightly
 		// because its likely to be a better match
-		if rv3[i].Pos[0] >= 1 && unicode.IsSpace(rune(res.Content[rv3[i].Pos[0]-1])) {
+		if rv3[i].Location[0] >= 1 && unicode.IsSpace(rune(res.Content[rv3[i].Location[0]-1])) {
 			m.Score += _spaceBoundBoost
 		}
-		if rv3[i].Pos[1] < len(res.Content)-1 && unicode.IsSpace(rune(res.Content[rv3[i].Pos[1]+1])) {
+		if rv3[i].Location[1] < len(res.Content)-1 && unicode.IsSpace(rune(res.Content[rv3[i].Location[1]+1])) {
 			m.Score += _spaceBoundBoost
 		}
 
 		// If the word is an exact match to what the user typed boost it
 		// So while the search may be case insensitive the ranking of
 		// the snippet does consider case when boosting ever so slightly
-		if string(res.Content[rv3[i].Pos[0]:rv3[i].Pos[1]]) == rv3[i].Word {
+		if string(res.Content[rv3[i].Location[0]:rv3[i].Location[1]]) == rv3[i].Word {
 			m.Score += _exactMatchBoost
 		}
 
@@ -291,18 +291,18 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 // which makes things easy to sort and deal with
 func convertToRelevant(res *FileJob) []relevantV3 {
 	var rv3 []relevantV3
-	for k, v := range res.MatchLocations {
-		for _, i := range v {
+	for word, locations := range res.MatchLocations {
+		for _, loc := range locations {
 			rv3 = append(rv3, relevantV3{
-				Word: k,
-				Pos:  i,
+				Word:     word,
+				Location: loc,
 			})
 		}
 	}
 
 	// Sort the results so when we slide around everything is in order
 	slices.SortFunc(rv3, func(i, j relevantV3) int {
-		return cmp.Compare(i.Pos[0], j.Pos[0])
+		return cmp.Compare(i.Location[0], j.Location[0])
 	})
 
 	return rv3
@@ -316,10 +316,7 @@ func findSpaceRight(res *FileJob, pos int, distance int) (int, bool) {
 		return pos, false
 	}
 
-	end := pos + distance
-	if end > len(res.Content)-1 {
-		end = len(res.Content) - 1
-	}
+	end := min(pos+distance, len(res.Content)-1)
 
 	// Look for spaces
 	for i := pos; i <= end; i++ {
@@ -335,21 +332,13 @@ func findSpaceRight(res *FileJob, pos int, distance int) (int, bool) {
 // up to distance away. Returns index of space if a space was found and tru
 // otherwise the original index is return and false
 func findSpaceLeft(res *FileJob, pos int, distance int) (int, bool) {
-	if len(res.Content) == 0 {
+	if len(res.Content) == 0 ||
+		pos >= len(res.Content) {
 		return pos, false
-	}
-
-	if pos >= len(res.Content) {
-		return pos, false
-	}
-
-	end := pos - distance
-	if end < 0 {
-		end = 0
 	}
 
 	// Look for spaces
-	for i := pos; i >= end; i-- {
+	for i := pos; i >= max(0, pos-distance); i-- {
 		if str.StartOfRune(res.Content[i]) && unicode.IsSpace(rune(res.Content[i])) {
 			return i, true
 		}
@@ -360,8 +349,5 @@ func findSpaceLeft(res *FileJob, pos int, distance int) (int, bool) {
 
 // abs returns the absolute value of x.
 func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
+	return max(x, -x)
 }
