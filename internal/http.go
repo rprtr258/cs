@@ -154,7 +154,7 @@ func StartHttpServer() error {
 			}
 
 			fileCount = fileReaderWorker.GetFileCount()
-			rankResults(int(fileReaderWorker.GetFileCount()), results)
+			rankResults(fileReaderWorker.GetFileCount(), results)
 		}
 
 		// Create a random str to define where the start and end of

@@ -67,7 +67,7 @@ func (f *ResultSummarizer) Start() {
 		}
 	}
 
-	rankResults(int(f.FileReaderWorker.GetFileCount()), results)
+	rankResults(f.FileReaderWorker.GetFileCount(), results)
 
 	switch f.Format {
 	case "json":
@@ -86,7 +86,7 @@ func (f *ResultSummarizer) formatVimGrep(results []*FileJob) {
 
 	// Cycle through files with matches and process each snippets inside it.
 	for _, res := range results {
-		snippets := extractRelevantV3(res, documentFrequency, int(SnippetLength))
+		snippets := extractRelevantV3(res, documentFrequency, SnippetLength)
 		if len(snippets) > f.SnippetCount {
 			snippets = snippets[:f.SnippetCount]
 		}
@@ -108,7 +108,7 @@ func (f *ResultSummarizer) formatJson(results []*FileJob) {
 	documentFrequency := calculateDocumentTermFrequency(results)
 
 	for _, res := range results {
-		v3 := extractRelevantV3(res, documentFrequency, int(SnippetLength))[0]
+		v3 := extractRelevantV3(res, documentFrequency, SnippetLength)[0]
 
 		// We have the snippet so now we need to highlight it
 		// we get all the locations that fall in the snippet length
@@ -155,7 +155,7 @@ func (f *ResultSummarizer) formatDefault(results []*FileJob) {
 	documentFrequency := calculateDocumentTermFrequency(results)
 
 	for _, res := range results {
-		snippets := extractRelevantV3(res, documentFrequency, int(SnippetLength))
+		snippets := extractRelevantV3(res, documentFrequency, SnippetLength)
 		if len(snippets) > f.SnippetCount {
 			snippets = snippets[:f.SnippetCount]
 		}

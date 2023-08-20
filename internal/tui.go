@@ -100,7 +100,7 @@ func (cont *tuiApplicationController) drawView() {
 
 	// rank all results
 	// then go and get the relevant portion for display
-	rankResults(int(cont.DocumentCount), resultsCopy)
+	rankResults(cont.DocumentCount, resultsCopy)
 	documentTermFrequency := calculateDocumentTermFrequency(resultsCopy)
 
 	// after ranking only get the details for as many as we actually need to
@@ -123,7 +123,7 @@ func (cont *tuiApplicationController) drawView() {
 		}
 
 		// TODO run in parallel for performance boost...
-		snippets := extractRelevantV3(res, documentTermFrequency, int(SnippetLength))
+		snippets := extractRelevantV3(res, documentTermFrequency, SnippetLength)
 		if len(snippets) == 0 { // false positive most likely
 			continue
 		}
@@ -330,7 +330,7 @@ func NewTuiSearch() error {
 	snippetInputField = tview.NewInputField().
 		SetFieldBackgroundColor(tcell.ColorDefault).
 		SetAcceptanceFunc(tview.InputFieldInteger).
-		SetText(strconv.Itoa(int(SnippetLength))).
+		SetText(strconv.Itoa(SnippetLength)).
 		SetFieldWidth(4).
 		SetChangedFunc(func(text string) {
 			if strings.TrimSpace(text) == "" {
