@@ -42,11 +42,10 @@ func PreParseQuery(args []string) ([]string, string) {
 // to provide real boolean logic with AND OR NOT
 // but does enough for now
 func ParseQuery(args []string) []searchParams {
-	cleanArgs := []string{}
-
+	cleanArgs := make([]string, len(args))
 	// Clean the arguments to avoid redundant spaces and the like
-	for _, arg := range args {
-		cleanArgs = append(cleanArgs, strings.TrimSpace(arg))
+	for i, arg := range args {
+		cleanArgs[i] = strings.TrimSpace(arg)
 	}
 
 	params := []searchParams{}
