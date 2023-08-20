@@ -203,7 +203,8 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 		for _, v := range m.Relevant {
 			// Use 2 here because we want to avoid punctuation such that a search for
 			// cat dog will still be boosted if we find cat. dog
-			if abs(rv3[i].Location[0]-v.Location[1]) <= 2 || abs(rv3[i].Location[1]-v.Location[0]) <= 2 {
+			if abs(rv3[i].Location[0]-v.Location[1]) <= 2 ||
+				abs(rv3[i].Location[1]-v.Location[0]) <= 2 {
 				m.Score += _phraseHeavyBoost
 			}
 		}
