@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"bytes"
@@ -14,7 +14,8 @@ import (
 )
 
 var (
-	dirFilePaths             = []string{}
+	// TODO: make local
+	DirFilePaths             = []string{}
 	searchToFileMatchesCache = map[string][]string{}
 )
 
@@ -60,10 +61,10 @@ func walkFiles() chan *gocodewalker.File {
 	fileListQueue := make(chan *gocodewalker.File, 1000)
 
 	if FindRoot {
-		dirFilePaths[0] = gocodewalker.FindRepositoryRoot(dirFilePaths[0])
+		DirFilePaths[0] = gocodewalker.FindRepositoryRoot(DirFilePaths[0])
 	}
 
-	fileWalker := gocodewalker.NewFileWalker(dirFilePaths[0], fileListQueue)
+	fileWalker := gocodewalker.NewFileWalker(DirFilePaths[0], fileListQueue)
 	fileWalker.AllowListExtensions = AllowListExtensions.Value()
 	fileWalker.IgnoreIgnoreFile = IgnoreIgnoreFile
 	fileWalker.IgnoreGitIgnore = IgnoreGitIgnore

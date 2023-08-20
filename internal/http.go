@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"crypto/md5"
@@ -118,13 +118,13 @@ func StartHttpServer() {
 
 			// If the user asks we should look back till we find the .git or .hg directory and start the search from there
 
-			dirFilePaths = []string{"."}
+			DirFilePaths = []string{"."}
 			if strings.TrimSpace(Directory) != "" {
-				dirFilePaths = []string{Directory}
+				DirFilePaths = []string{Directory}
 			}
 
 			if FindRoot {
-				dirFilePaths[0] = gocodewalker.FindRepositoryRoot(dirFilePaths[0])
+				DirFilePaths[0] = gocodewalker.FindRepositoryRoot(DirFilePaths[0])
 			}
 
 			if len(ext) != 0 {
