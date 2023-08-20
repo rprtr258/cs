@@ -181,8 +181,8 @@ func NewFileReaderWorker(input chan *gocodewalker.File, output chan *FileJob, fu
 	}
 }
 
-func (f *FileReaderWorker) GetFileCount() int64 {
-	return atomic.LoadInt64(&f.fileCount)
+func (f *FileReaderWorker) GetFileCount() int {
+	return int(atomic.LoadInt64(&f.fileCount))
 }
 
 // Start is responsible for spinning up jobs

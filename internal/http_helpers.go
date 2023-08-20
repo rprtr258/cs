@@ -8,7 +8,7 @@ type search struct {
 	Results             []searchResult
 	ResultsCount        int
 	RuntimeMilliseconds int64
-	ProcessedFileCount  int64
+	ProcessedFileCount  int
 	ExtensionFacet      []facetResult
 	Pages               []pageResult
 	Ext                 string

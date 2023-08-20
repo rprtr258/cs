@@ -106,7 +106,7 @@ func StartHttpServer() error {
 		pageSize := 20
 
 		var results []*FileJob
-		var fileCount int64
+		var fileCount int
 
 		log.Info().
 			Caller().

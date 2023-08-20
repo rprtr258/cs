@@ -45,7 +45,7 @@ type tuiApplicationController struct {
 	Query         string
 	Offset        int
 	Results       []*FileJob
-	DocumentCount int64
+	DocumentCount int
 	Mutex         sync.Mutex
 	DrawMutex     sync.Mutex
 	SearchMutex   sync.Mutex
