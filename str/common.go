@@ -86,19 +86,14 @@ func AllSimpleFold(origin rune) []rune {
 // N.B only two bytes are required for these cases.  If we decided
 // to support spaces like '，' then we'll need more bytes.
 func IsSpace(firstByte, nextByte byte) bool {
-	switch {
-	case (9 <= firstByte) && (firstByte <= 13): // \t, \n, \f, \r
-		return true
-	case firstByte == 32: // SPACE
-		return true
-	case firstByte == 194:
-		if nextByte == 133 { // NEL
-			return true
-		} else if nextByte == 160 { // NBSP
-			return true
-		}
-	}
-	return false
+	const (
+		SPACE = 32
+		NEL   = 133
+		NBSP  = 160
+	)
+	return 9 <= firstByte && firstByte <= 13 || // \t, \n, \f, \r
+		firstByte == SPACE ||
+		firstByte == 194 && (nextByte == NEL || nextByte == NBSP)
 }
 
 // StartOfRune a byte and returns true if its the start of a multibyte
