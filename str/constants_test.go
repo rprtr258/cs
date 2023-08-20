@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT OR Unlicense
-
 package str
 
 var prideAndPrejudice = `

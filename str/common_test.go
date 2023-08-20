@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT OR Unlicense
-
 package str
 
 import (
@@ -109,7 +107,7 @@ func TestPermuteCaseFoldingComparison(t *testing.T) {
 }
 
 func TestIsSpace(t *testing.T) {
-	var cases = []struct {
+	cases := []struct {
 		b1, b2 byte
 		want   bool
 	}{
@@ -138,7 +136,7 @@ func TestIsSpace(t *testing.T) {
 }
 
 func TestStartOfRune(t *testing.T) {
-	var cases = []struct {
+	cases := []struct {
 		bs   []byte
 		idx  int
 		want bool
