@@ -248,11 +248,8 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 	for _, b := range bestMatches {
 		isOverlap := false
 		for _, r := range ranges {
-			if b.Pos[0] >= r[0] && b.Pos[0] <= r[1] {
-				isOverlap = true
-			}
-
-			if b.Pos[1] >= r[0] && b.Pos[1] <= r[1] {
+			if b.Pos[0] >= r[0] && b.Pos[0] <= r[1] ||
+				b.Pos[1] >= r[0] && b.Pos[1] <= r[1] {
 				isOverlap = true
 			}
 		}
