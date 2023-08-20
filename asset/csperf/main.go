@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: MIT
-// SPDX-License-Identifier: Unlicense
-
 package main
 
 import (

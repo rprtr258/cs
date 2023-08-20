@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: MIT
-// https://github.com/bep/debounce/
-
 package main
 
 import (

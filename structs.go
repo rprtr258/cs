@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT OR Unlicense
-
 package main
 
 // FileJob - results of processing internally before sent to the formatter
