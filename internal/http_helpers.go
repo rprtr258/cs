@@ -26,8 +26,7 @@ type searchResult struct {
 	Title    string
 	Location string
 	Content  []template.HTML
-	StartPos int
-	EndPos   int
+	Pos      [2]int
 	Score    float64
 }
 
@@ -143,11 +142,11 @@ var (
 				<ul>
 					{{- range .Results }}
 					<li>
-						<h4><a href="/file/{{ .Location }}?sp={{ .StartPos }}&ep={{ .EndPos }}">{{ .Title }}</a></h4>
+						<h4><a href="/file/{{ .Location }}?sp={{ index .Pos 0 }}&ep={{ index .Pos 1 }}">{{ .Title }}</a></h4>
 						{{- range .Content }}
 							<pre>{{ . }}</pre>
 						{{- end }}
-					</li><small>[<a href="/file/{{ .Location }}?sp={{ .StartPos }}&ep={{ .EndPos }}#{{ .StartPos }}">jump to location</a>]</small>
+					</li><small>[<a href="/file/{{ .Location }}?sp={{ index .Pos 0 }}&ep={{ index .Pos 1 }}#{{ index .Pos 0 }}">jump to location</a>]</small>
 					{{- end }}
 				</ul>
 

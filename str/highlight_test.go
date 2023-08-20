@@ -142,7 +142,7 @@ func TestIntegrationRegex(t *testing.T) {
 func TestIntegrationIndexAll(t *testing.T) {
 	haystack := "111"
 
-	l := fromRegexpLoc(IndexAll(haystack, "1", -1))
+	l := IndexAll(haystack, "1", -1)
 	got := HighlightString(haystack, l, "__", "__")
 
 	assert.Equal(t, "__1____1____1__", got)
@@ -151,7 +151,7 @@ func TestIntegrationIndexAll(t *testing.T) {
 func TestIntegrationIndexAllIgnoreCaseUnicode(t *testing.T) {
 	haystack := "111"
 
-	l := fromRegexpLoc(IndexAllIgnoreCase(haystack, "1", -1))
+	l := IndexAllIgnoreCase(haystack, "1", -1)
 	got := HighlightString(haystack, l, "__", "__")
 
 	assert.Equal(t, "__1____1____1__", got)

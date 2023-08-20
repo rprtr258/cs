@@ -405,7 +405,7 @@ func NewTuiSearch() error {
 		Run()
 }
 
-func getLocated(matchLocations map[string][][]int, v3 Snippet) [][2]int {
+func getLocated(matchLocations map[string][][2]int, v3 Snippet) [][2]int {
 	// For all the match locations we have only keep the ones that should be inside
 	// where we are matching
 	var l [][2]int

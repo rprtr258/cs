@@ -230,8 +230,7 @@ func StartHttpServer() error {
 				Title:    res.Location,
 				Location: res.Location,
 				Content:  []template.HTML{template.HTML(coloredContent)},
-				StartPos: v3.Pos[0],
-				EndPos:   v3.Pos[1],
+				Pos:      v3.Pos,
 				Score:    res.Score,
 			})
 		}

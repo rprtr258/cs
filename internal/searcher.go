@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"errors"
 	"regexp"
 	"runtime"
 	"strings"
@@ -56,15 +55,17 @@ func (f *SearcherWorker) Start() {
 							res.MatchLocations[needle.Term] = str.IndexAllIgnoreCase(string(res.Content), needle.Term, f.MatchLimit)
 						}
 					case Regex:
-						x, err := f.regexSearch(needle, &res.Content)
-						if err == nil { // Error indicates a regex compile fail so safe to ignore here
+						if r, err := regexp.Compile(needle.Term); err == nil {
+							// Error indicates a regex compile fail so safe to ignore here
+							// err = errors.New("regex compile failure issue")
+							x := f.regexSearch(r, &res.Content)
 							didSearch = true
 							res.MatchLocations[needle.Term] = x
 						}
 					case Fuzzy1:
 						didSearch = true
 						terms := makeFuzzyDistanceOne(strings.TrimRight(needle.Term, "~1"))
-						matchLocations := [][]int{}
+						matchLocations := [][2]int{}
 						for _, t := range terms {
 							if f.CaseSensitive {
 								matchLocations = append(matchLocations, str.IndexAll(string(res.Content), t, f.MatchLimit)...)
@@ -76,7 +77,7 @@ func (f *SearcherWorker) Start() {
 					case Fuzzy2:
 						didSearch = true
 						terms := makeFuzzyDistanceTwo(strings.TrimRight(needle.Term, "~2"))
-						matchLocations := [][]int{}
+						matchLocations := [][2]int{}
 						for _, t := range terms {
 							if f.CaseSensitive {
 								matchLocations = append(matchLocations, str.IndexAll(string(res.Content), t, f.MatchLimit)...)
@@ -125,15 +126,12 @@ func (f *SearcherWorker) Start() {
 	close(f.output)
 }
 
-func (f *SearcherWorker) regexSearch(needle searchParams, content *[]byte) (x [][]int, err error) {
-	// Its possible the user supplies an invalid regex and if so we should not crash
-	// but ignore it
-	defer func() {
-		if recover() != nil {
-			err = errors.New("regex compile failure issue")
-		}
-	}()
+func (f *SearcherWorker) regexSearch(r *regexp.Regexp, content *[]byte) [][2]int {
+	loc := r.FindAllIndex(*content, f.MatchLimit)
 
-	r := regexp.MustCompile(needle.Term)
-	return r.FindAllIndex(*content, f.MatchLimit), nil
+	l := make([][2]int, len(loc))
+	for i, match := range loc {
+		l[i] = [2]int{match[0], match[1]}
+	}
+	return l
 }

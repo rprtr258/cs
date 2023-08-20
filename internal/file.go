@@ -211,7 +211,7 @@ func (f *FileReaderWorker) Start() {
 						Content:        fil,
 						Bytes:          len(fil),
 						Score:          0,
-						MatchLocations: map[string][][]int{},
+						MatchLocations: map[string][][2]int{},
 					}
 				}
 			}

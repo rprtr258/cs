@@ -29,7 +29,7 @@ import (
 //
 // Note that this method is explicitly case sensitive in its matching.
 // A return value of nil indicates no match.
-func IndexAll(haystack string, needle string, limit int) [][]int {
+func IndexAll(haystack string, needle string, limit int) [][2]int {
 	// The below needed to avoid timeout crash found using go-fuzz
 	if len(haystack) == 0 || len(needle) == 0 {
 		return nil
@@ -37,7 +37,7 @@ func IndexAll(haystack string, needle string, limit int) [][]int {
 
 	// Return contains a slice of slices where index 0 is the location of the match in bytes
 	// and index 1 contains the end location in bytes of the match
-	var locs [][]int
+	var locs [][2]int
 
 	// Perform the first search outside the main loop to make the method
 	// easier to understand
@@ -66,7 +66,7 @@ func IndexAll(haystack string, needle string, limit int) [][]int {
 
 		// trim off the portion we already searched, and look from there
 		searchText = searchText[loc+len(needle):]
-		locs = append(locs, []int{loc + offSet, loc + offSet + len(needle)})
+		locs = append(locs, [2]int{loc + offSet, loc + offSet + len(needle)})
 
 		// We need to keep the offset of the match so we continue searching
 		offSet += loc + len(needle)
@@ -88,8 +88,10 @@ func IndexAll(haystack string, needle string, limit int) [][]int {
 // (which is a common case) this is here to speed up the case permutations
 // it is limited to a size of 10 so it never gets that large but really
 // allows things to run faster
-var _permuteCache = map[string][]string{}
-var _permuteCacheLock = sync.Mutex{}
+var (
+	_permuteCache     = map[string][]string{}
+	_permuteCacheLock = sync.Mutex{}
+)
 
 // CacheSize this is public so it can be modified depending on project needs
 // you can increase this value to cache more of the case permutations which
@@ -112,7 +114,7 @@ var CacheSize = 10
 //
 // For pure literal searches IE no regular expression logic this method
 // is a drop in replacement for re.FindAllIndex but generally much faster.
-func IndexAllIgnoreCase(haystack string, needle string, limit int) [][]int {
+func IndexAllIgnoreCase(haystack string, needle string, limit int) [][2]int {
 	// The below needed to avoid timeout crash found using go-fuzz
 	if len(haystack) == 0 || len(needle) == 0 {
 		return nil
@@ -139,14 +141,14 @@ func IndexAllIgnoreCase(haystack string, needle string, limit int) [][]int {
 	// you the need to validate a potential match after you have found one.
 	// The confirmation match is done in a loop because for some literals regular expression
 	// is still to slow, although for most its a valid option.
-	var locs [][]int
+	var locs [][2]int
 
 	// Char limit is the cut-off where we switch from all case permutations
 	// to just the first 3 and then check for an actual match
 	// in my tests 3 speeds things up the most against test data
 	// of many famous books concatenated together and large
 	// amounts of data from /dev/urandom
-	var charLimit = 3
+	charLimit := 3
 
 	if utf8.RuneCountInString(needle) <= charLimit {
 		// We are below the limit we set, so get all the search
@@ -227,7 +229,7 @@ func IndexAllIgnoreCase(haystack string, needle string, limit int) [][]int {
 		// into a fancy  vector instruction on AMD64 (which is all we care about)
 		// and as such its pretty hard to beat.
 		haystackRune := []rune(haystack)
-		
+
 		for _, term := range searchTerms {
 			potentialMatches := IndexAll(haystack, term, -1)
 
@@ -255,7 +257,7 @@ func IndexAllIgnoreCase(haystack string, needle string, limit int) [][]int {
 				toMatch := toMatchRune[:toMatchEnd]
 
 				// old logic here
-				//toMatch = []rune(haystack[match[0] : match[0]+e])[:len(needleRune)]
+				// toMatch = []rune(haystack[match[0] : match[0]+e])[:len(needleRune)]
 
 				// what we need to do is iterate the runes of the haystack portion we are trying to
 				// match and confirm that the same rune position is a actual match or case fold match
@@ -288,7 +290,7 @@ func IndexAllIgnoreCase(haystack string, needle string, limit int) [][]int {
 					// When we have confirmed a match we add it to our total
 					// but adjust the positions to the match and the length of the
 					// needle to ensure the byte count lines up
-					locs = append(locs, []int{match[0], match[0] + len(string(toMatch))})
+					locs = append(locs, [2]int{match[0], match[0] + len(string(toMatch))})
 				}
 
 			}
