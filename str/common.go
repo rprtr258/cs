@@ -10,7 +10,7 @@ import (
 // RemoveStringDuplicates is a simple helper method that removes duplicates from
 // any given str slice and then returns a nice duplicate free str slice
 func RemoveStringDuplicates(elements []string) []string {
-	var encountered = map[string]bool{}
+	encountered := map[string]bool{}
 	var result []string
 
 	for v := range elements {
@@ -23,33 +23,19 @@ func RemoveStringDuplicates(elements []string) []string {
 	return result
 }
 
-// Contains checks the supplied slice of string for the existence
-// of a string and returns true if found, and false otherwise
-func Contains(elements []string, needle string) bool {
-	for _, v := range elements {
-		if needle == v {
-			return true
-		}
-	}
-
-	return false
-}
-
 // PermuteCase given a str returns a slice containing all possible case permutations
 // of that str such that input of foo will return
 // foo Foo fOo FOo foO FoO fOO FOO
 // Note that very long inputs can produce an enormous amount of
 // results in the returned slice OR result in an overflow and return nothing
 func PermuteCase(input string) []string {
-	l := len(input)
-	max := 1 << l
+	max := 1 << len(input)
 
 	var combinations []string
-
 	for i := 0; i < max; i++ {
 		s := ""
-		for idx, ch := range input {
-			if (i & (1 << idx)) == 0 {
+		for j, ch := range input {
+			if i&(1<<j) == 0 {
 				s += strings.ToUpper(string(ch))
 			} else {
 				s += strings.ToLower(string(ch))
@@ -58,7 +44,6 @@ func PermuteCase(input string) []string {
 
 		combinations = append(combinations, s)
 	}
-
 	return RemoveStringDuplicates(combinations)
 }
 
@@ -66,8 +51,8 @@ func PermuteCase(input string) []string {
 // with characters being folded such that S will return S s ſ
 func PermuteCaseFolding(input string) []string {
 	combinations := PermuteCase(input)
-	var combos []string
 
+	var combos []string
 	for _, combo := range combinations {
 		for index, runeValue := range combo {
 			for _, p := range AllSimpleFold(runeValue) {
@@ -75,7 +60,6 @@ func PermuteCaseFolding(input string) []string {
 			}
 		}
 	}
-
 	return RemoveStringDuplicates(combos)
 }
 
