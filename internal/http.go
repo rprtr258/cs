@@ -24,7 +24,7 @@ func StartHttpServer() error {
 		path := strings.Replace(r.URL.Path, "/file/raw/", "", 1)
 
 		log.Info().
-			Str("unique_code", "f24a4b1d").
+			Caller().
 			Str("path", path).
 			Msg("raw page")
 
@@ -40,7 +40,7 @@ func StartHttpServer() error {
 		path := strings.Replace(r.URL.Path, "/file/", "", 1)
 
 		log.Info().
-			Str("unique_code", "9212b49c").
+			Caller().
 			Int("startpos", startPos).
 			Int("endpos", endPos).
 			Str("path", path).
@@ -55,7 +55,7 @@ func StartHttpServer() error {
 		content, err = os.ReadFile(path)
 		if err != nil {
 			log.Error().
-				Str("unique_code", "d063c1fd").
+				Caller().
 				Int("startpos", startPos).
 				Int("endpos", endPos).
 				Str("path", path).
@@ -105,12 +105,12 @@ func StartHttpServer() error {
 		var fileCount int64
 
 		log.Info().
-			Str("unique_code", "1e38548a").
+			Caller().
 			Msg("search page")
 
 		if query != "" {
 			log.Info().
-				Str("unique_code", "1a54b0cd").
+				Caller().
 				Str("query", query).
 				Int("snippetlength", snippetLength).
 				Str("ext", ext).
@@ -255,7 +255,10 @@ func StartHttpServer() error {
 		}
 	})
 
-	log.Info().Str("unique_code", "03148801").Str("address", Address).Msg("ready to serve requests")
+	log.Info().
+		Caller().
+		Str("address", Address).
+		Msg("ready to serve requests")
 	return http.ListenAndServe(Address, nil)
 }
 
