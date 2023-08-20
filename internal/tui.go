@@ -411,10 +411,10 @@ func getLocated(matchLocations map[string][][]int, v3 Snippet) [][2]int {
 	var l [][2]int
 	for _, value := range matchLocations {
 		for _, s := range value {
-			if s[0] >= v3.StartPos && s[1] <= v3.EndPos {
+			if s[0] >= v3.Pos[0] && s[1] <= v3.Pos[1] {
 				// Have to create a new one to avoid changing the position
 				// unlike in others where we throw away the results afterwards
-				l = append(l, [2]int{s[0] - v3.StartPos, s[1] - v3.StartPos})
+				l = append(l, [2]int{s[0] - v3.Pos[0], s[1] - v3.Pos[0]})
 			}
 		}
 	}

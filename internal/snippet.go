@@ -35,8 +35,7 @@ type relevantV3 struct {
 
 type Snippet struct {
 	Content   string
-	StartPos  int
-	EndPos    int
+	Pos       [2]int
 	Score     float64
 	LineStart int
 	LineEnd   int
@@ -292,8 +291,7 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 
 		snippets = append(snippets, Snippet{
 			Content:   string(res.Content[b.StartPos:b.EndPos]),
-			StartPos:  b.StartPos,
-			EndPos:    b.EndPos,
+			Pos:       [2]int{b.StartPos, b.EndPos},
 			Score:     b.Score,
 			LineStart: startLineOffset,
 			LineEnd:   contentLineOffset,

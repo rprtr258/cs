@@ -206,10 +206,10 @@ func StartHttpServer() error {
 			var l [][2]int
 			for _, value := range res.MatchLocations {
 				for _, s := range value {
-					if s[0] >= v3.StartPos && s[1] <= v3.EndPos {
+					if s[0] >= v3.Pos[0] && s[1] <= v3.Pos[1] {
 						l = append(l, [2]int{
-							s[0] - v3.StartPos,
-							s[1] - v3.StartPos,
+							s[0] - v3.Pos[0],
+							s[1] - v3.Pos[0],
 						})
 					}
 				}
@@ -219,7 +219,7 @@ func StartHttpServer() error {
 			// our special start and end strings with actual HTML
 			coloredContent := v3.Content
 			// If endpos = 0 don't highlight anything because it means its a filename match
-			if v3.EndPos != 0 {
+			if v3.Pos[1] != 0 {
 				coloredContent = str.HighlightString(v3.Content, l, fmtBegin, fmtEnd)
 				coloredContent = html.EscapeString(coloredContent)
 				coloredContent = strings.Replace(coloredContent, fmtBegin, "<strong>", -1)
@@ -230,8 +230,8 @@ func StartHttpServer() error {
 				Title:    res.Location,
 				Location: res.Location,
 				Content:  []template.HTML{template.HTML(coloredContent)},
-				StartPos: v3.StartPos,
-				EndPos:   v3.EndPos,
+				StartPos: v3.Pos[0],
+				EndPos:   v3.Pos[1],
 				Score:    res.Score,
 			})
 		}

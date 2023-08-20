@@ -96,7 +96,7 @@ func (f *ResultSummarizer) formatVimGrep(results []*FileJob) {
 
 		for _, snip := range snippets {
 			hint := strings.ReplaceAll(snip.Content, "\n", "\\n")
-			line := fmt.Sprintf("%v:%v:%v:%v", res.Location, snip.LineStart, snip.StartPos, hint)
+			line := fmt.Sprintf("%v:%v:%v:%v", res.Location, snip.LineStart, snip.Pos[0], hint)
 			vimGrepOutput = append(vimGrepOutput, line)
 		}
 	}
@@ -120,9 +120,9 @@ func (f *ResultSummarizer) formatJson(results []*FileJob) {
 		var l [][]int
 		for _, value := range res.MatchLocations {
 			for _, s := range value {
-				if s[0] >= v3.StartPos && s[1] <= v3.EndPos {
-					s[0] = s[0] - v3.StartPos
-					s[1] = s[1] - v3.StartPos
+				if s[0] >= v3.Pos[0] && s[1] <= v3.Pos[1] {
+					s[0] = s[0] - v3.Pos[0]
+					s[1] = s[1] - v3.Pos[0]
 					l = append(l, s)
 				}
 			}
@@ -177,10 +177,10 @@ func (f *ResultSummarizer) formatDefault(results []*FileJob) {
 			var l [][2]int
 			for _, value := range res.MatchLocations {
 				for _, s := range value {
-					if s[0] >= snippets[i].StartPos && s[1] <= snippets[i].EndPos {
+					if s[0] >= snippets[i].Pos[0] && s[1] <= snippets[i].Pos[1] {
 						l = append(l, [2]int{
-							s[0] - snippets[i].StartPos,
-							s[1] - snippets[i].StartPos,
+							s[0] - snippets[i].Pos[0],
+							s[1] - snippets[i].Pos[0],
 						})
 					}
 				}
@@ -190,7 +190,7 @@ func (f *ResultSummarizer) formatDefault(results []*FileJob) {
 
 			// If the start and end pos are 0 then we don't need to highlight because there is
 			// nothing to do so, which means its likely to be a filename match with no content
-			if !(snippets[i].StartPos == 0 && snippets[i].EndPos == 0) {
+			if !(snippets[i].Pos[0] == 0 && snippets[i].Pos[1] == 0) {
 				displayContent = str.HighlightString(snippets[i].Content, l, fmtBegin, fmtEnd)
 			}
 
