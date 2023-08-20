@@ -93,12 +93,8 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 		}
 
 		// Slide left
-		j := i - 1
-		for {
-			// Ensure we never step outside the bounds of our slice
-			if j < 0 {
-				break
-			}
+		// Ensure we never step outside the bounds of our slice
+		for j := i - 1; j >= 0; j-- {
 
 			// How close is the matches start to our end?
 			diff := rv3[i].Location[1] - rv3[j].Location[0]
@@ -112,17 +108,11 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 			// If we didn't break this is considered a larger match
 			m.Pos[0] = rv3[j].Location[0]
 			m.Relevant = append(m.Relevant, rv3[j])
-			j--
 		}
 
 		// Slide right
-		j = i + 1
-		for {
-			// Ensure we never step outside the bounds of our slice
-			if j >= len(rv3) {
-				break
-			}
-
+		// Ensure we never step outside the bounds of our slice
+		for j := i + 1; j < len(rv3); j++ {
 			// How close is the matches end to our start?
 			diff := rv3[j].Location[1] - rv3[i].Location[0]
 
@@ -134,7 +124,6 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 
 			m.Pos[1] = rv3[j].Location[1]
 			m.Relevant = append(m.Relevant, rv3[j])
-			j++
 		}
 
 		// If the match around this isn't long enough expand it out
