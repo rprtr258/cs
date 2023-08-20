@@ -206,8 +206,7 @@ func (cont *tuiApplicationController) DoSearch() {
 
 		q, fuzzy := PreParseQuery(strings.Fields(query))
 		fileReaderWorker := NewFileReaderWorker(files, toProcessQueue, fuzzy)
-		fileSearcher := NewSearcherWorker(toProcessQueue, summaryQueue)
-		fileSearcher.SearchString = q
+		fileSearcher := NewSearcherWorker(toProcessQueue, summaryQueue, q)
 
 		resultSummarizer := NewResultSummarizer(summaryQueue)
 		resultSummarizer.FileReaderWorker = fileReaderWorker

@@ -21,8 +21,7 @@ func NewConsoleSearch() {
 	query, fuzzy := PreParseQuery(SearchString)
 	fileReaderWorker := NewFileReaderWorker(files, toProcessQueue, fuzzy)
 
-	fileSearcher := NewSearcherWorker(toProcessQueue, summaryQueue)
-	fileSearcher.SearchString = query
+	fileSearcher := NewSearcherWorker(toProcessQueue, summaryQueue, query)
 
 	resultSummarizer := NewResultSummarizer(summaryQueue)
 	resultSummarizer.FileReaderWorker = fileReaderWorker
