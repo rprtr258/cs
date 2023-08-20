@@ -144,15 +144,9 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 		l := m.Pos[1] - m.Pos[0]
 		if l < relLength {
 			add := (relLength - l) / 2
-			m.Pos[0] -= add
-			m.Pos[1] += add
-
-			if m.Pos[0] < 0 {
-				m.Pos[0] = 0
-			}
-
-			if m.Pos[1] > len(res.Content) {
-				m.Pos[1] = len(res.Content)
+			m.Pos = [2]int{
+				max(m.Pos[0]-add, 0),
+				min(m.Pos[1]+add, len(res.Content)),
 			}
 		}
 
