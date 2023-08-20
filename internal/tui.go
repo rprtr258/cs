@@ -67,9 +67,7 @@ func (cont *tuiApplicationController) IncrementOffset() {
 }
 
 func (cont *tuiApplicationController) DecrementOffset() {
-	if cont.Offset > 0 {
-		cont.Offset--
-	}
+	cont.Offset = max(0, cont.Offset-1)
 }
 
 func (cont *tuiApplicationController) ResetOffset() {
