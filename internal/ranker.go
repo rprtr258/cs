@@ -75,8 +75,7 @@ func rankResultsLocation(results []*FileJob) []*FileJob {
 				//
 				// Of course this assumes that they have the text test in the
 				// content otherwise the match is discarded
-				results[i].Score = results[i].Score * (1.0 +
-					(LocationBoostValue * float64(len(l)) * float64(len(key))))
+				results[i].Score *= 1.0 + LocationBoostValue*float64(len(l))*float64(len(key))
 
 				// If the location is closer to the start boost or rather don't
 				// affect negatively as much because we reduce the score slightly based on
@@ -88,14 +87,14 @@ func rankResultsLocation(results []*FileJob) []*FileJob {
 					}
 				}
 
-				results[i].Score = results[i].Score*1.0 - (float64(low) * 0.02)
+				results[i].Score -= 0.02 * float64(low)
 			}
 		}
 
 		// If we found multiple terms (assuming we have multiple), boost yet again to
 		// reward matches which have multiple matches
 		if foundTerms > 1 {
-			results[i].Score = results[i].Score * (1 + LocationBoostValue*float64(foundTerms))
+			results[i].Score *= 1 + LocationBoostValue*float64(foundTerms)
 		}
 	}
 
@@ -185,7 +184,7 @@ func rankResultsBM25(corpusCount int, results []*FileJob, documentFrequencies ma
 	for i := 0; i < len(results); i++ {
 		averageDocumentWords += float64(max(1, results[i].Bytes/BytesWordDivisor))
 	}
-	averageDocumentWords = averageDocumentWords / float64(len(results))
+	averageDocumentWords /= float64(len(results))
 
 	k1 := 1.2
 	b := 0.75
@@ -229,7 +228,7 @@ func calculateDocumentTermFrequency(results []*FileJob) map[string]int {
 	documentFrequencies := map[string]int{}
 	for i := 0; i < len(results); i++ {
 		for k := range results[i].MatchLocations {
-			documentFrequencies[k] = documentFrequencies[k] + len(results[i].MatchLocations[k])
+			documentFrequencies[k] += len(results[i].MatchLocations[k])
 		}
 	}
 
@@ -243,7 +242,7 @@ func calculateDocumentFrequency(results []*FileJob) map[string]int {
 	documentFrequencies := map[string]int{}
 	for i := 0; i < len(results); i++ {
 		for k := range results[i].MatchLocations {
-			documentFrequencies[k] = documentFrequencies[k] + 1
+			documentFrequencies[k]++
 		}
 	}
 

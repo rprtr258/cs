@@ -40,15 +40,16 @@ type ResultSummarizer struct {
 	FileOutput       string
 }
 
-func NewResultSummarizer(input chan *FileJob, fileReaderWorker *FileReaderWorker, SnippetCount int) ResultSummarizer {
+func NewResultSummarizer(input chan *FileJob, fileReaderWorker *FileReaderWorker, snippetCount int) ResultSummarizer {
 	return ResultSummarizer{
 		input:            input,
 		ResultLimit:      -1,
-		SnippetCount:     SnippetCount,
-		NoColor:          os.Getenv("TERM") == "dumb" || (!isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd())),
+		SnippetCount:     snippetCount,
 		Format:           Format,
 		FileOutput:       FileOutput,
 		FileReaderWorker: fileReaderWorker,
+		NoColor: os.Getenv("TERM") == "dumb" ||
+			!isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()),
 	}
 }
 

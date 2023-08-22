@@ -21,38 +21,6 @@ var (
 
 // var searchToFileMatchesCacheMutex = sync.Mutex{}
 func FindFiles(query string) chan *gocodewalker.File {
-	// TODO enable this again as it seems to have issues
-	//searchToFileMatchesCacheMutex.Lock()
-	//defer searchToFileMatchesCacheMutex.Unlock()
-	//
-	//// get the keys for the cache
-	//var keys []string
-	//for k := range searchToFileMatchesCache {
-	//	keys = append(keys, k)
-	//}
-	//
-	//// clear from the cache anything longer than the search since its will not help us
-	//for _, k := range keys {
-	//	if len(k) > len(query) || query[0] != k[0] { // if cached is longer OR the first char does not match...
-	//		delete(searchToFileMatchesCache, k)
-	//	}
-	//}
-	//
-	//// check if the files we expect are in the cache...
-	//files := make(chan *gocodewalker.File, 100000)
-	//for i := len(query); i > 0; i-- {
-	//	r, ok := searchToFileMatchesCache[query[:i]]
-	//	if ok {
-	//		go func() {
-	//			for _, f := range r {
-	//				files <- &gocodewalker.File{Location: f}
-	//			}
-	//			close(files)
-	//		}()
-	//		return files
-	//	}
-	//}
-
 	return walkFiles()
 }
 
@@ -171,13 +139,13 @@ type FileReaderWorker struct {
 	FuzzyMatch       string
 }
 
-func NewFileReaderWorker(input chan *gocodewalker.File, output chan *FileJob, fuzzy string) *FileReaderWorker {
+func NewFileReaderWorker(input chan *gocodewalker.File, output chan *FileJob, fuzzyMatch string) *FileReaderWorker {
 	return &FileReaderWorker{
 		input:            input,
 		output:           output,
 		fileCount:        0,
 		MaxReadSizeBytes: 1_000_000, // sensible default of 1MB
-		FuzzyMatch:       fuzzy,
+		FuzzyMatch:       fuzzyMatch,
 	}
 }
 

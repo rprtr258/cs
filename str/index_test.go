@@ -59,7 +59,7 @@ func TestExtractLocationsNegativeLimit(t *testing.T) {
 func TestDropInReplacement(t *testing.T) {
 	r := regexp.MustCompile(`test`)
 
-	matches1 := r.FindAllIndex([]byte(testMatchEndCase), -1)
+	matches1 := r.FindAllStringIndex(testMatchEndCase, -1)
 	matches2 := IndexAll(testMatchEndCase, "test", -1)
 
 	for i := 0; i < len(matches1); i++ {
@@ -72,7 +72,7 @@ func TestDropInReplacement(t *testing.T) {
 func TestDropInReplacementNil(t *testing.T) {
 	r := regexp.MustCompile(`test`)
 
-	matches1 := r.FindAllIndex([]byte(`aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`), -1)
+	matches1 := r.FindAllStringIndex(`aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`, -1)
 	matches2 := IndexAll(`aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`, "test", -1)
 
 	if matches1 != nil || matches2 != nil {
@@ -83,7 +83,7 @@ func TestDropInReplacementNil(t *testing.T) {
 func TestDropInReplacementMultiple(t *testing.T) {
 	r := regexp.MustCompile(`1`)
 
-	matches1 := r.FindAllIndex([]byte(`111`), -1)
+	matches1 := r.FindAllStringIndex(`111`, -1)
 	matches2 := IndexAll(`111`, "1", -1)
 
 	for i := 0; i < len(matches1); i++ {
@@ -192,7 +192,7 @@ func TestIndexAllIgnoreCaseUnicodeCheckEnd(t *testing.T) {
 func TestDropInReplacementMultipleIndexAllIgnoreCaseUnicode(t *testing.T) {
 	r := regexp.MustCompile(`1`)
 
-	matches1 := r.FindAllIndex([]byte(`111`), -1)
+	matches1 := r.FindAllStringIndex(`111`, -1)
 	matches2 := IndexAllIgnoreCase(`111`, "1", -1)
 
 	for i := 0; i < len(matches1); i++ {
@@ -207,7 +207,7 @@ func TestIndexAllIgnoreCaseUnicodeSpace(t *testing.T) {
 	m := IndexAll(strings.ToLower(prideAndPrejudice), "ten thousand a year", -1)
 
 	r := regexp.MustCompile(`(?i)ten thousand a year`)
-	index := r.FindAllIndex([]byte(prideAndPrejudice), -1)
+	index := r.FindAllStringIndex(prideAndPrejudice, -1)
 
 	if len(matches) != len(m) || len(matches) != len(index) {
 		t.Error("Expected 2 got", len(matches))
@@ -218,7 +218,7 @@ func TestIndexAllIgnoreCaseAtEnd(t *testing.T) {
 	matches := IndexAllIgnoreCase(`testjava`, "java", -1)
 
 	r := regexp.MustCompile(`java`)
-	index := r.FindAllIndex([]byte(`testjava`), -1)
+	index := r.FindAllStringIndex(`testjava`, -1)
 
 	if len(matches) != len(index) || matches[0][0] != 4 || matches[0][1] != 8 {
 		t.Error("Expected 1 got", len(matches))
@@ -231,9 +231,9 @@ func TestIndexAllIgnoreCaseStrange(t *testing.T) {
 `, "rune{}", -1)
 
 	r := regexp.MustCompile(`rune{}`)
-	index := r.FindAllIndex([]byte(`func AllSimpleFold(input rune) []rune {
+	index := r.FindAllStringIndex(`func AllSimpleFold(input rune) []rune {
         res := []rune{}
-`), -1)
+`, -1)
 
 	if len(matches) != len(index) || matches[0][0] != 57 || matches[0][1] != 63 {
 		t.Error("Expected 1 got", len(matches))
@@ -243,7 +243,7 @@ func TestIndexAllIgnoreCaseStrange(t *testing.T) {
 func TestIndexAllIgnoreCaseStrangeTwo(t *testing.T) {
 	matches := IndexAllIgnoreCase(`this is my cs ß haystack`, `ß`, -1)
 	r := regexp.MustCompile(`ß`)
-	index := r.FindAllIndex([]byte(`this is my cs ß haystack`), -1)
+	index := r.FindAllStringIndex(`this is my cs ß haystack`, -1)
 
 	if len(matches) != len(index) || matches[0][0] != 14 || matches[0][1] != 16 {
 		t.Error("Expected 1 got", len(matches))

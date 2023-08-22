@@ -30,7 +30,7 @@ print('转换成二进制:',bin(i),'转换成八进制:',oct(i), '转换成十�
 #二进制、八进制、十六进制这几个进制相互转换的时候，都要先转换为十进制int()`
 
 func TestIndexAllUnicodeOffset(t *testing.T) {
-	lines := strings.Split(strings.Replace(broken, "\r\n", "\n", -1), "\n")
+	lines := strings.Split(strings.ReplaceAll(broken, "\r\n", "\n"), "\n")
 
 	// this has an exception
 	for _, l := range lines {

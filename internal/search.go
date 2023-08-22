@@ -29,7 +29,7 @@ func PreParseQuery(args []string) ([]string, string) {
 	for _, s := range args {
 		ls := strings.TrimSpace(strings.ToLower(s))
 		if strings.HasPrefix(ls, "file:") || strings.HasPrefix(ls, "filename:") {
-			fuzzy = strings.TrimSpace(strings.ToLower(strings.TrimSpace(strings.Replace(strings.Replace(ls, "file:", "", -1), "filename:", "", -1))))
+			fuzzy = strings.TrimSpace(strings.ToLower(strings.TrimSpace(strings.ReplaceAll(strings.ReplaceAll(ls, "file:", ""), "filename:", ""))))
 		} else {
 			modified = append(modified, s)
 		}

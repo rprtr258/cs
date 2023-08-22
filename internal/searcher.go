@@ -22,7 +22,7 @@ type SearcherWorker struct {
 	InstanceId    int
 }
 
-func NewSearcherWorker(input chan *FileJob, output chan *FileJob, query []string) *SearcherWorker {
+func NewSearcherWorker(input, output chan *FileJob, query []string) *SearcherWorker {
 	return &SearcherWorker{
 		input:        input,
 		output:       output,

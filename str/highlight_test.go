@@ -129,7 +129,7 @@ func TestIntegrationRegex(t *testing.T) {
 	r := regexp.MustCompile(`1`)
 	haystack := "111"
 
-	l := fromRegexpLoc(r.FindAllIndex([]byte(haystack), -1))
+	l := fromRegexpLoc(r.FindAllStringIndex(haystack, -1))
 	got := HighlightString(haystack, l, "__", "__")
 
 	if got != "__1____1____1__" {

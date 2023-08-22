@@ -78,8 +78,8 @@ func StartHttpServer() error {
 		coloredContent := str.HighlightString(string(content), [][2]int{{startPos, endPos}}, fmtBegin, fmtEnd)
 
 		coloredContent = html.EscapeString(coloredContent)
-		coloredContent = strings.Replace(coloredContent, fmtBegin, fmt.Sprintf(`<strong id="%d">`, startPos), -1)
-		coloredContent = strings.Replace(coloredContent, fmtEnd, "</strong>", -1)
+		coloredContent = strings.ReplaceAll(coloredContent, fmtBegin, fmt.Sprintf(`<strong id="%d">`, startPos))
+		coloredContent = strings.ReplaceAll(coloredContent, fmtEnd, "</strong>")
 
 		err = templateDisplay.Execute(w, fileDisplay{
 			Location:            path,
@@ -131,7 +131,7 @@ func StartHttpServer() error {
 			}
 
 			AllowListExtensions = cli.NewStringSlice()
-			if len(ext) != 0 {
+			if ext != "" {
 				AllowListExtensions = cli.NewStringSlice(ext)
 			}
 
@@ -216,8 +216,8 @@ func StartHttpServer() error {
 			if v3.Pos[1] != 0 {
 				coloredContent = str.HighlightString(v3.Content, l, fmtBegin, fmtEnd)
 				coloredContent = html.EscapeString(coloredContent)
-				coloredContent = strings.Replace(coloredContent, fmtBegin, "<strong>", -1)
-				coloredContent = strings.Replace(coloredContent, fmtEnd, "</strong>", -1)
+				coloredContent = strings.ReplaceAll(coloredContent, fmtBegin, "<strong>")
+				coloredContent = strings.ReplaceAll(coloredContent, fmtEnd, "</strong>")
 			}
 
 			searchResults = append(searchResults, searchResult{

@@ -133,8 +133,8 @@ func (cont *tuiApplicationController) drawView() {
 		coloredContent := str.HighlightString(snippet.Content, l, fmtBegin, fmtEnd)
 		coloredContent = tview.Escape(coloredContent)
 
-		coloredContent = strings.Replace(coloredContent, fmtBegin, "[red]", -1)
-		coloredContent = strings.Replace(coloredContent, fmtEnd, "[white]", -1)
+		coloredContent = strings.ReplaceAll(coloredContent, fmtBegin, "[red]")
+		coloredContent = strings.ReplaceAll(coloredContent, fmtEnd, "[white]")
 
 		maxLineNumberLen := digitsCount(snippet.LinePos[1])
 
@@ -348,9 +348,7 @@ func NewTuiSearch() error {
 				tviewApplication.SetFocus(inputField)
 			case tcell.KeyBacktab:
 				tviewApplication.SetFocus(inputField)
-			case tcell.KeyEnter:
-				fallthrough
-			case tcell.KeyUp:
+			case tcell.KeyEnter, tcell.KeyUp:
 				SnippetLength = min(SnippetLength+100, 8000)
 				snippetInputField.SetText(fmt.Sprintf("%d", SnippetLength))
 				debounced(applicationController.DoSearch)

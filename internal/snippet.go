@@ -210,7 +210,7 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 		// This mod applies over the whole score because we want to most unique words to appear in the middle
 		// of the snippet over those where it is on the edge which this should achieve even if it means
 		// we may miss out on a slightly better match
-		m.Score = m.Score / float64(documentFrequencies[rv3[i].Word]) // Factor in how unique the word is
+		m.Score /= float64(documentFrequencies[rv3[i].Word]) // Factor in how unique the word is
 		bestMatches = append(bestMatches, m)
 	}
 
@@ -293,7 +293,7 @@ func convertToRelevant(res *FileJob) []relevantV3 {
 // Looks for a nearby whitespace character near this position (`pos`)
 // up to `distance` away.  Returns index of space if a space was found and
 // true, otherwise returns the original index and false
-func findSpaceRight(res *FileJob, pos int, distance int) (int, bool) {
+func findSpaceRight(res *FileJob, pos, distance int) (int, bool) {
 	if len(res.Content) == 0 {
 		return pos, false
 	}
@@ -313,7 +313,7 @@ func findSpaceRight(res *FileJob, pos int, distance int) (int, bool) {
 // Looks for nearby whitespace character near this position
 // up to distance away. Returns index of space if a space was found and tru
 // otherwise the original index is return and false
-func findSpaceLeft(res *FileJob, pos int, distance int) (int, bool) {
+func findSpaceLeft(res *FileJob, pos, distance int) (int, bool) {
 	if len(res.Content) == 0 ||
 		pos >= len(res.Content) {
 		return pos, false

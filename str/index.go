@@ -27,9 +27,9 @@ import (
 //
 // Note that this method is explicitly case sensitive in its matching.
 // A return value of nil indicates no match.
-func IndexAll(haystack string, needle string, limit int) [][2]int {
+func IndexAll(haystack, needle string, limit int) [][2]int {
 	// The below needed to avoid timeout crash found using go-fuzz
-	if len(haystack) == 0 || len(needle) == 0 {
+	if haystack == "" || needle == "" {
 		return nil
 	}
 
@@ -111,9 +111,9 @@ var CacheSize = 10
 //
 // For pure literal searches IE no regular expression logic this method
 // is a drop in replacement for re.FindAllIndex but generally much faster.
-func IndexAllIgnoreCase(haystack string, needle string, limit int) [][2]int {
+func IndexAllIgnoreCase(haystack, needle string, limit int) [][2]int {
 	// The below needed to avoid timeout crash found using go-fuzz
-	if len(haystack) == 0 || len(needle) == 0 {
+	if haystack == "" || needle == "" {
 		return nil
 	}
 
