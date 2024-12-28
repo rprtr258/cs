@@ -75,7 +75,7 @@ func StartHttpServer() error {
 		fmtBegin := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("begin_%d", nowNanos()))))
 		fmtEnd := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("end_%d", nowNanos()))))
 
-		coloredContent := str.HighlightString(string(content), [][2]int{{startPos, endPos}}, fmtBegin, fmtEnd)
+		coloredContent := str.HighlightString(string(content), slices.Values([][2]int{{startPos, endPos}}), fmtBegin, fmtEnd)
 
 		coloredContent = html.EscapeString(coloredContent)
 		coloredContent = strings.ReplaceAll(coloredContent, fmtBegin, fmt.Sprintf(`<strong id="%d">`, startPos))
@@ -197,14 +197,17 @@ func StartHttpServer() error {
 			// we get all the locations that fall in the snippet length
 			// and then remove the length of the snippet cut which
 			// makes out location line up with the snippet size
-			var l [][2]int
-			for _, value := range res.MatchLocations {
-				for _, s := range value {
-					if s[0] >= v3.Pos[0] && s[1] <= v3.Pos[1] {
-						l = append(l, [2]int{
-							s[0] - v3.Pos[0],
-							s[1] - v3.Pos[0],
-						})
+			l := func(yield func([2]int) bool) {
+				for _, value := range res.MatchLocations {
+					for _, s := range value {
+						if s[0] >= v3.Pos[0] && s[1] <= v3.Pos[1] {
+							if !yield([2]int{
+								s[0] - v3.Pos[0],
+								s[1] - v3.Pos[0],
+							}) {
+								return
+							}
+						}
 					}
 				}
 			}

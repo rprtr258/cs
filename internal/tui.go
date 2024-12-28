@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"iter"
 	"os"
 	"runtime"
 	"strconv"
@@ -402,21 +403,23 @@ func NewTuiSearch() error {
 		Run()
 }
 
-func getLocated(matchLocations map[string][][2]int, snippet Snippet) [][2]int {
+func getLocated(matchLocations map[string][][2]int, snippet Snippet) iter.Seq[[2]int] {
 	// For all the match locations we have only keep the ones that should be inside
 	// where we are matching
-	var l [][2]int
-	for _, locations := range matchLocations {
-		for _, location := range locations {
-			if location[0] >= snippet.Pos[0] && location[1] <= snippet.Pos[1] {
-				// Have to create a new one to avoid changing the position
-				// unlike in others where we throw away the results afterwards
-				l = append(l, [2]int{
-					location[0] - snippet.Pos[0],
-					location[1] - snippet.Pos[0],
-				})
+	return func(yield func([2]int) bool) {
+		for _, locations := range matchLocations {
+			for _, location := range locations {
+				if location[0] >= snippet.Pos[0] && location[1] <= snippet.Pos[1] {
+					// Have to create a new one to avoid changing the position
+					// unlike in others where we throw away the results afterwards
+					if !yield([2]int{
+						location[0] - snippet.Pos[0],
+						location[1] - snippet.Pos[0],
+					}) {
+						return
+					}
+				}
 			}
 		}
 	}
-	return l
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"slices"
 	"time"
 
 	"github.com/rprtr258/cs/str"
@@ -43,7 +44,7 @@ func main() {
 	fmt.Println("\nIndexAll (custom)")
 	for i := 0; i < 3; i++ {
 		start = time.Now()
-		all := str.IndexAll(haystack, arg1, -1)
+		all := slices.Collect(str.IndexAll(haystack, arg1, -1))
 		elapsed = time.Since(start)
 		fmt.Println("Scan took", elapsed, len(all))
 	}
@@ -60,7 +61,7 @@ func main() {
 	fmt.Println("\nIndexAllIgnoreCaseUnicode (custom)")
 	for i := 0; i < 3; i++ {
 		start = time.Now()
-		all := str.IndexAllIgnoreCase(haystack, arg1, -1)
+		all := slices.Collect(str.IndexAllIgnoreCase(haystack, arg1, -1))
 		elapsed = time.Since(start)
 		fmt.Println("Scan took", elapsed, len(all))
 	}

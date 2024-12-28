@@ -1,7 +1,9 @@
 package str
 
 import (
+	"iter"
 	"math"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -27,15 +29,12 @@ import (
 //
 // Note that this method is explicitly case sensitive in its matching.
 // A return value of nil indicates no match.
-func IndexAll(haystack, needle string, limit int) [][2]int {
+// TODO: since we return iterator, limit is not needed anymore
+func IndexAll(haystack, needle string, limit int) iter.Seq[[2]int] {
 	// The below needed to avoid timeout crash found using go-fuzz
 	if haystack == "" || needle == "" {
 		return nil
 	}
-
-	// Return contains a slice of slices where index 0 is the location of the match in bytes
-	// and index 1 contains the end location in bytes of the match
-	var locs [][2]int
 
 	// Perform the first search outside the main loop to make the method
 	// easier to understand
@@ -54,31 +53,30 @@ func IndexAll(haystack, needle string, limit int) [][2]int {
 		limit++
 	}
 
-	var count int
-	for loc != -1 {
-		count++
-		if count == limit {
-			break
+	// Return contains a slice of slices where index 0 is the location of the match in bytes
+	// and index 1 contains the end location in bytes of the match
+	return func(yield func([2]int) bool) {
+		var count int
+		for loc != -1 {
+			count++
+			if count == limit {
+				break
+			}
+
+			// trim off the portion we already searched, and look from there
+			searchText = searchText[loc+len(needle):]
+			if !yield([2]int{loc + offSet, loc + offSet + len(needle)}) {
+				return
+			}
+
+			// We need to keep the offset of the match so we continue searching
+			offSet += loc + len(needle)
+
+			// strings.Index does checks of if the string is empty so we don't need
+			// to explicitly do it ourselves
+			loc = strings.Index(searchText, needle)
 		}
-
-		// trim off the portion we already searched, and look from there
-		searchText = searchText[loc+len(needle):]
-		locs = append(locs, [2]int{loc + offSet, loc + offSet + len(needle)})
-
-		// We need to keep the offset of the match so we continue searching
-		offSet += loc + len(needle)
-
-		// strings.Index does checks of if the string is empty so we don't need
-		// to explicitly do it ourselves
-		loc = strings.Index(searchText, needle)
 	}
-
-	// Retain compatibility with FindAllIndex method
-	if len(locs) == 0 {
-		return nil
-	}
-
-	return locs
 }
 
 // if the IndexAllIgnoreCase method is called frequently with the same patterns
@@ -111,7 +109,8 @@ var CacheSize = 10
 //
 // For pure literal searches IE no regular expression logic this method
 // is a drop in replacement for re.FindAllIndex but generally much faster.
-func IndexAllIgnoreCase(haystack, needle string, limit int) [][2]int {
+// TODO: since we return iterator, limit is not needed anymore
+func IndexAllIgnoreCase(haystack, needle string, limit int) iter.Seq[[2]int] {
 	// The below needed to avoid timeout crash found using go-fuzz
 	if haystack == "" || needle == "" {
 		return nil
@@ -162,7 +161,7 @@ func IndexAllIgnoreCase(haystack, needle string, limit int) [][2]int {
 			if len(_permuteCache) > CacheSize {
 				_permuteCache = map[string][]string{}
 			}
-			searchTerms = PermuteCaseFolding(needle)
+			searchTerms = slices.Collect(PermuteCaseFolding(needle))
 			_permuteCache[needle] = searchTerms
 		}
 		_permuteCacheLock.Unlock()
@@ -177,7 +176,7 @@ func IndexAllIgnoreCase(haystack, needle string, limit int) [][2]int {
 		// into a fancy  vector instruction on AMD64 (which is all we care about)
 		// and as such its pretty hard to beat.
 		for _, term := range searchTerms {
-			locs = append(locs, IndexAll(haystack, term, limit)...)
+			locs = slices.AppendSeq(locs, IndexAll(haystack, term, limit))
 		}
 
 		// if the limit is not -1 we need to sort and return the first X results so we maintain compatibility with how
@@ -190,7 +189,7 @@ func IndexAllIgnoreCase(haystack, needle string, limit int) [][2]int {
 				return locs[i][0] < locs[j][0]
 			})
 
-			return locs[:limit]
+			return slices.Values(locs[:limit])
 		}
 	} else {
 		// Over the character limit so look for potential matches and only then check to find real ones
@@ -210,7 +209,7 @@ func IndexAllIgnoreCase(haystack, needle string, limit int) [][2]int {
 			if len(_permuteCache) > CacheSize {
 				_permuteCache = map[string][]string{}
 			}
-			searchTerms = PermuteCaseFolding(string(needleRune[:charLimit]))
+			searchTerms = slices.Collect(PermuteCaseFolding(string(needleRune[:charLimit])))
 			_permuteCache[string(needleRune[:charLimit])] = searchTerms
 		}
 		_permuteCacheLock.Unlock()
@@ -229,7 +228,7 @@ func IndexAllIgnoreCase(haystack, needle string, limit int) [][2]int {
 		for _, term := range searchTerms {
 			potentialMatches := IndexAll(haystack, term, -1)
 
-			for _, match := range potentialMatches {
+			for match := range potentialMatches {
 				// We have a potential match, so now see if it actually matches
 				// by getting the actual value out of our haystack
 				if len(haystackRune) < match[0]+len(needleRune) {
@@ -265,7 +264,7 @@ func IndexAllIgnoreCase(haystack, needle string, limit int) [][2]int {
 						isMatch = true
 					} else {
 						// Not a match so case fold to actually check
-						for _, j := range AllSimpleFold(toMatch[i]) {
+						for j := range AllSimpleFold(toMatch[i]) {
 							if j == needleRune[i] {
 								isMatch = true
 								break
@@ -300,14 +299,9 @@ func IndexAllIgnoreCase(haystack, needle string, limit int) [][2]int {
 				return locs[i][0] < locs[j][0]
 			})
 
-			return locs[:limit]
+			return slices.Values(locs[:limit])
 		}
 	}
 
-	// Retain compatibility with FindAllIndex method
-	if len(locs) == 0 {
-		return nil
-	}
-
-	return locs
+	return slices.Values(locs)
 }

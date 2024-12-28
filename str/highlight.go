@@ -1,6 +1,7 @@
 package str
 
 import (
+	"iter"
 	"strings"
 )
 
@@ -8,19 +9,17 @@ import (
 // strings which can be used for highlighting around matching terms. For example
 // you could pass in "test" and have it return "<strong>te</strong>st"
 // locations accepts output from regex.FindAllIndex IndexAllIgnoreCase or IndexAll
-func HighlightString(content string, locations [][2]int, in, out string) string {
-	var str strings.Builder
+func HighlightString(content string, locations iter.Seq[[2]int], in, out string) string {
+	// Profiles show that most time is spent looking against the locations
+	// so we generated a cache quickly to speed that process up
+	highlightCache := map[int][2]int{}
+	for val := range locations {
+		highlightCache[val[0]] = val
+	}
 
 	end := -1
 	var found bool
-
-	// Profiles show that most time is spent looking against the locations
-	// so we generated a cache quickly to speed that process up
-	highlightCache := map[int]struct{}{}
-	for _, val := range locations {
-		highlightCache[val[0]] = struct{}{}
-	}
-
+	var str strings.Builder
 	// Range over str which is rune aware so even if we get invalid
 	// locations we should hopefully ignore them as the byte offset wont
 	// match
@@ -29,28 +28,23 @@ func HighlightString(content string, locations [][2]int, in, out string) string 
 
 		// Find which of the locations match
 		// and if so write the start str
-		if _, ok := highlightCache[i]; ok {
-			for _, location := range locations {
-				if i != location[0] {
-					continue
-				}
-				// We have a match where the outer index matches
-				// against the location[0] which contains the location of the match
+		if location, ok := highlightCache[i]; ok {
+			// We have a match where the outer index matches
+			// against the location[0] which contains the location of the match
 
-				// We only write the found str once per match and
-				// only if we are not in the middle of one
-				if !found && end <= 0 {
-					str.WriteString(in)
-					found = true
-				}
-
-				// Determine the expected end location for this match
-				// and only if its further than the expected end do we
-				// change to deal with overlaps if say we are trying to match
-				// on t and tes against test where we want tes as the longest
-				// match to be the end that's written
-				end = max(end, location[1]-1) // location[1] in this case is the length of the match
+			// We only write the found str once per match and
+			// only if we are not in the middle of one
+			if !found && end <= 0 {
+				str.WriteString(in)
+				found = true
 			}
+
+			// Determine the expected end location for this match
+			// and only if its further than the expected end do we
+			// change to deal with overlaps if say we are trying to match
+			// on t and tes against test where we want tes as the longest
+			// match to be the end that's written
+			end = max(end, location[1]-1) // location[1] in this case is the length of the match
 		}
 
 		// This deals with characters that are multi-byte and as such we never range over

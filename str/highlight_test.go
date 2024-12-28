@@ -1,14 +1,16 @@
 package str
 
 import (
+	"iter"
 	"regexp"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHighlightStringSimple(t *testing.T) {
-	loc := [][2]int{{0, 4}}
+	loc := slices.Values([][2]int{{0, 4}})
 
 	got := HighlightString("this", loc, "[in]", "[out]")
 
@@ -19,7 +21,7 @@ func TestHighlightStringSimple(t *testing.T) {
 }
 
 func TestHighlightStringCheckInOut(t *testing.T) {
-	loc := [][2]int{{0, 4}}
+	loc := slices.Values([][2]int{{0, 4}})
 
 	got := HighlightString("this", loc, "__", "__")
 
@@ -30,7 +32,7 @@ func TestHighlightStringCheckInOut(t *testing.T) {
 }
 
 func TestHighlightStringCheck2(t *testing.T) {
-	loc := [][2]int{{0, 4}}
+	loc := slices.Values([][2]int{{0, 4}})
 
 	got := HighlightString("bing", loc, "__", "__")
 
@@ -41,7 +43,7 @@ func TestHighlightStringCheck2(t *testing.T) {
 }
 
 func TestHighlightStringCheckTwoWords(t *testing.T) {
-	loc := [][2]int{{0, 4}, {5, 9}}
+	loc := slices.Values([][2]int{{0, 4}, {5, 9}})
 
 	got := HighlightString("this this", loc, "__", "__")
 
@@ -52,7 +54,7 @@ func TestHighlightStringCheckTwoWords(t *testing.T) {
 }
 
 func TestHighlightStringCheckMixedWords(t *testing.T) {
-	loc := [][2]int{{0, 4}, {5, 9}, {10, 19}}
+	loc := slices.Values([][2]int{{0, 4}, {5, 9}, {10, 19}})
 
 	got := HighlightString("this this something", loc, "__", "__")
 
@@ -63,7 +65,7 @@ func TestHighlightStringCheckMixedWords(t *testing.T) {
 }
 
 func TestHighlightStringOverlapStart(t *testing.T) {
-	loc := [][2]int{{0, 1}, {0, 4}}
+	loc := slices.Values([][2]int{{0, 1}, {0, 4}})
 
 	got := HighlightString("THIS", loc, "__", "__")
 
@@ -74,7 +76,7 @@ func TestHighlightStringOverlapStart(t *testing.T) {
 }
 
 func TestHighlightStringOverlapMiddle(t *testing.T) {
-	loc := [][2]int{{0, 4}, {1, 2}}
+	loc := slices.Values([][2]int{{0, 4}, {1, 2}})
 
 	got := HighlightString("this", loc, "__", "__")
 
@@ -85,7 +87,7 @@ func TestHighlightStringOverlapMiddle(t *testing.T) {
 }
 
 func TestHighlightStringNoOverlapMiddleNextSame(t *testing.T) {
-	loc := [][2]int{{0, 1}, {1, 2}}
+	loc := slices.Values([][2]int{{0, 1}, {1, 2}})
 
 	got := HighlightString("this", loc, "__", "__")
 
@@ -96,7 +98,7 @@ func TestHighlightStringNoOverlapMiddleNextSame(t *testing.T) {
 }
 
 func TestHighlightStringOverlapMiddleLonger(t *testing.T) {
-	loc := [][2]int{{0, 2}, {1, 4}}
+	loc := slices.Values([][2]int{{0, 2}, {1, 4}})
 
 	got := HighlightString("this", loc, "__", "__")
 
@@ -107,7 +109,7 @@ func TestHighlightStringOverlapMiddleLonger(t *testing.T) {
 }
 
 func TestBugOne(t *testing.T) {
-	loc := [][2]int{{10, 18}}
+	loc := slices.Values([][2]int{{10, 18}})
 
 	got := HighlightString("this is unexpected", loc, "__", "__")
 
@@ -117,19 +119,21 @@ func TestBugOne(t *testing.T) {
 	}
 }
 
-func fromRegexpLoc(loc [][]int) [][2]int {
-	l := make([][2]int, len(loc))
-	for i, match := range loc {
-		l[i] = [2]int{match[0], match[1]}
+func fromRegexpLoc(loc iter.Seq[[]int]) iter.Seq[[2]int] {
+	return func(yield func([2]int) bool) {
+		for match := range loc {
+			if !yield([2]int{match[0], match[1]}) {
+				return
+			}
+		}
 	}
-	return l
 }
 
 func TestIntegrationRegex(t *testing.T) {
 	r := regexp.MustCompile(`1`)
 	haystack := "111"
 
-	l := fromRegexpLoc(r.FindAllStringIndex(haystack, -1))
+	l := fromRegexpLoc(slices.Values(r.FindAllStringIndex(haystack, -1)))
 	got := HighlightString(haystack, l, "__", "__")
 
 	if got != "__1____1____1__" {

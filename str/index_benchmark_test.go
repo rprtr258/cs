@@ -2,6 +2,7 @@ package str
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -30,7 +31,7 @@ func BenchmarkFindAllIndex(b *testing.B) {
 
 func BenchmarkIndexAll(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		matches := IndexAll(testMatchEndCase, "test", -1)
+		matches := slices.Collect(IndexAll(testMatchEndCase, "test", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
 		}
@@ -51,7 +52,7 @@ func BenchmarkFindAllIndexLarge(b *testing.B) {
 
 func BenchmarkIndexAllLarge(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		matches := IndexAll(testMatchEndCaseLarge, "test", -1)
+		matches := slices.Collect(IndexAll(testMatchEndCaseLarge, "test", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
 		}
@@ -72,7 +73,7 @@ func BenchmarkFindAllIndexUnicode(b *testing.B) {
 
 func BenchmarkIndexAllUnicode(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		matches := IndexAll(testUnicodeMatchEndCase, "test", -1)
+		matches := slices.Collect(IndexAll(testUnicodeMatchEndCase, "test", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
 		}
@@ -93,7 +94,7 @@ func BenchmarkFindAllIndexUnicodeLarge(b *testing.B) {
 
 func BenchmarkIndexAllUnicodeLarge(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		matches := IndexAll(testUnicodeMatchEndCaseLarge, "test", -1)
+		matches := slices.Collect(IndexAll(testUnicodeMatchEndCaseLarge, "test", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
 		}
@@ -120,7 +121,7 @@ func BenchmarkFindAllIndexManyPartialMatches(b *testing.B) {
 // can be found throughout the haystack
 func BenchmarkIndexAllManyPartialMatches(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		matches := IndexAll(testMatchEndCase, "1test", -1)
+		matches := slices.Collect(IndexAll(testMatchEndCase, "1test", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
 		}
@@ -147,7 +148,7 @@ func BenchmarkFindAllIndexUnicodeManyPartialMatches(b *testing.B) {
 // can be found throughout the haystack
 func BenchmarkIndexAllUnicodeManyPartialMatches(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		matches := IndexAll(testUnicodeMatchEndCase, "Ⱥtest", -1)
+		matches := slices.Collect(IndexAll(testUnicodeMatchEndCase, "Ⱥtest", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
 		}
@@ -170,7 +171,7 @@ func BenchmarkFindAllIndexUnicodeManyPartialMatchesVeryLarge(b *testing.B) {
 
 func BenchmarkIndexAllUnicodeManyPartialMatchesVeryLarge(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		matches := IndexAll(_large101, "Ⱥtest", -1)
+		matches := slices.Collect(IndexAll(_large101, "Ⱥtest", -1))
 		if len(matches) != 101 {
 			b.Error("Expected 101 match got", len(matches))
 		}
@@ -193,7 +194,7 @@ func BenchmarkFindAllIndexUnicodeManyPartialMatchesSuperLarge(b *testing.B) {
 
 func BenchmarkIndexAllUnicodeManyPartialMatchesSuperLarge(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		matches := IndexAll(_large501, "Ⱥtest", -1)
+		matches := slices.Collect(IndexAll(_large501, "Ⱥtest", -1))
 		if len(matches) != 501 {
 			b.Error("Expected 501 match got", len(matches))
 		}

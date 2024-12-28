@@ -173,14 +173,17 @@ func (f *ResultSummarizer) formatDefault(results []*FileJob) {
 			// we get all the locations that fall in the snippet length
 			// and then remove the length of the snippet cut which
 			// makes out location line up with the snippet size
-			var l [][2]int
-			for _, value := range res.MatchLocations {
-				for _, s := range value {
-					if s[0] >= snippets[i].Pos[0] && s[1] <= snippets[i].Pos[1] {
-						l = append(l, [2]int{
-							s[0] - snippets[i].Pos[0],
-							s[1] - snippets[i].Pos[0],
-						})
+			l := func(yield func([2]int) bool) {
+				for _, value := range res.MatchLocations {
+					for _, s := range value {
+						if s[0] >= snippets[i].Pos[0] && s[1] <= snippets[i].Pos[1] {
+							if !yield([2]int{
+								s[0] - snippets[i].Pos[0],
+								s[1] - snippets[i].Pos[0],
+							}) {
+								return
+							}
+						}
 					}
 				}
 			}

@@ -3,6 +3,7 @@ package internal
 import (
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 
@@ -50,9 +51,9 @@ func (f *SearcherWorker) Start() {
 					case Default, Quoted:
 						didSearch = true
 						if f.CaseSensitive {
-							res.MatchLocations[needle.Term] = str.IndexAll(string(res.Content), needle.Term, f.MatchLimit)
+							res.MatchLocations[needle.Term] = slices.Collect(str.IndexAll(string(res.Content), needle.Term, f.MatchLimit))
 						} else {
-							res.MatchLocations[needle.Term] = str.IndexAllIgnoreCase(string(res.Content), needle.Term, f.MatchLimit)
+							res.MatchLocations[needle.Term] = slices.Collect(str.IndexAllIgnoreCase(string(res.Content), needle.Term, f.MatchLimit))
 						}
 					case Regex:
 						if r, err := regexp.Compile(needle.Term); err == nil {
@@ -66,11 +67,11 @@ func (f *SearcherWorker) Start() {
 						didSearch = true
 						terms := makeFuzzyDistanceOne(strings.TrimRight(needle.Term, "~1"))
 						matchLocations := [][2]int{}
-						for _, t := range terms {
+						for t := range terms {
 							if f.CaseSensitive {
-								matchLocations = append(matchLocations, str.IndexAll(string(res.Content), t, f.MatchLimit)...)
+								matchLocations = slices.AppendSeq(matchLocations, str.IndexAll(string(res.Content), t, f.MatchLimit))
 							} else {
-								matchLocations = append(matchLocations, str.IndexAllIgnoreCase(string(res.Content), t, f.MatchLimit)...)
+								matchLocations = slices.AppendSeq(matchLocations, str.IndexAllIgnoreCase(string(res.Content), t, f.MatchLimit))
 							}
 						}
 						res.MatchLocations[needle.Term] = matchLocations
@@ -78,11 +79,11 @@ func (f *SearcherWorker) Start() {
 						didSearch = true
 						terms := makeFuzzyDistanceTwo(strings.TrimRight(needle.Term, "~2"))
 						matchLocations := [][2]int{}
-						for _, t := range terms {
+						for t := range terms {
 							if f.CaseSensitive {
-								matchLocations = append(matchLocations, str.IndexAll(string(res.Content), t, f.MatchLimit)...)
+								matchLocations = slices.AppendSeq(matchLocations, str.IndexAll(string(res.Content), t, f.MatchLimit))
 							} else {
-								matchLocations = append(matchLocations, str.IndexAllIgnoreCase(string(res.Content), t, f.MatchLimit)...)
+								matchLocations = slices.AppendSeq(matchLocations, str.IndexAllIgnoreCase(string(res.Content), t, f.MatchLimit))
 							}
 						}
 						res.MatchLocations[needle.Term] = matchLocations

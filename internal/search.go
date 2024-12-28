@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"iter"
 	"strings"
 
 	"github.com/rprtr258/cs/str"
@@ -153,46 +154,56 @@ const letterDigitFuzzyBytes = `abcdefghijklmnopqrstuvwxyz1234567890`
 // Takes in a term and returns a slice of them which contains all the
 // fuzzy versions of that str with things such as mis-spellings
 // somewhat based on https://norvig.com/spell-correct.html
-func makeFuzzyDistanceOne(term string) []string {
-	vals := []string{term}
-
-	if len(term) <= 2 {
-		return vals
-	}
-
-	// Delete letters so turn "test" into "est" "tst" "tet"
-	for i := 0; i < len(term); i++ {
-		vals = append(vals, term[:i]+term[i+1:])
-	}
-
-	// Replace a letter or digit which effectively does transpose for us
-	for i := 0; i < len(term); i++ {
-		for _, b := range letterDigitFuzzyBytes {
-			vals = append(vals, term[:i]+string(b)+term[i+1:])
+func makeFuzzyDistanceOne(term string) iter.Seq[string] {
+	return str.RemoveStringDuplicates(func(yield func(string) bool) {
+		if !yield(term) || len(term) <= 2 {
+			return
 		}
-	}
 
-	// Insert a letter or digit
-	for i := 0; i < len(term); i++ {
-		for _, b := range letterDigitFuzzyBytes {
-			vals = append(vals, term[:i]+string(b)+term[i:])
+		// Delete letters so turn "test" into "est" "tst" "tet"
+		for i := 0; i < len(term); i++ {
+			if !yield(term[:i] + term[i+1:]) {
+				return
+			}
 		}
-	}
 
-	return str.RemoveStringDuplicates(vals)
+		// Replace a letter or digit which effectively does transpose for us
+		for i := 0; i < len(term); i++ {
+			for _, b := range letterDigitFuzzyBytes {
+				if !yield(term[:i] + string(b) + term[i+1:]) {
+					return
+				}
+			}
+		}
+
+		// Insert a letter or digit
+		for i := 0; i < len(term); i++ {
+			for _, b := range letterDigitFuzzyBytes {
+				if !yield(term[:i] + string(b) + term[i:]) {
+					return
+				}
+			}
+		}
+	})
 }
 
 // Similar to fuzzy 1 but in this case we add letters
 // to make the distance larger
-func makeFuzzyDistanceTwo(term string) []string {
-	vals := makeFuzzyDistanceOne(term)
-
-	// Maybe they forgot to type a letter? Try adding one
-	for i := 0; i < len(term)+1; i++ {
-		for _, b := range letterDigitFuzzyBytes {
-			vals = append(vals, term[:i]+string(b)+term[i:])
+func makeFuzzyDistanceTwo(term string) iter.Seq[string] {
+	return str.RemoveStringDuplicates(func(yield func(string) bool) {
+		for v := range makeFuzzyDistanceOne(term) {
+			if !yield(v) {
+				return
+			}
 		}
-	}
 
-	return str.RemoveStringDuplicates(vals)
+		// Maybe they forgot to type a letter? Try adding one
+		for i := 0; i < len(term)+1; i++ {
+			for _, b := range letterDigitFuzzyBytes {
+				if !yield(term[:i] + string(b) + term[i:]) {
+					return
+				}
+			}
+		}
+	})
 }
