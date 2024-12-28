@@ -3,11 +3,13 @@ package main
 import (
 	"log"
 	"os"
+	"runtime/pprof"
 	"strings"
 
 	"github.com/urfave/cli/v2"
 
 	"github.com/rprtr258/cs/internal"
+	"github.com/rprtr258/cs/internal/core"
 )
 
 const _version = "1.4.0"
@@ -58,7 +60,7 @@ The default input field in tui mode supports some nano commands
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:        "address",
-			Destination: &internal.Address,
+			Destination: &core.Address,
 			Value:       ":8080",
 			Usage:       "address and port to listen to in HTTP mode",
 		},
@@ -69,98 +71,98 @@ The default input field in tui mode supports some nano commands
 			Usage:       "start http server for search",
 		},
 		&cli.BoolFlag{
-			Destination: &internal.IncludeBinaryFiles,
+			Destination: &core.IncludeBinaryFiles,
 			Name:        "binary",
 			Usage:       "set to disable binary file detection and search binary files",
 		},
 		&cli.BoolFlag{
-			Destination: &internal.IgnoreIgnoreFile,
+			Destination: &core.IgnoreIgnoreFile,
 			Name:        "no-ignore",
 			Usage:       "disables .ignore file logic",
 		},
 		&cli.BoolFlag{
-			Destination: &internal.IgnoreGitIgnore,
+			Destination: &core.IgnoreGitIgnore,
 			Name:        "no-gitignore",
 			Usage:       "disables .gitignore file logic",
 		},
 		&cli.IntFlag{
-			Destination: &internal.SnippetLength,
+			Destination: &core.SnippetLength,
 			Name:        "snippet-length",
 			Aliases:     []string{"n"},
 			Value:       300,
 			Usage:       "size of the snippet to display",
 		},
 		&cli.IntFlag{
-			Destination: &internal.SnippetCount,
+			Destination: &core.SnippetCount,
 			Name:        "snippet-count",
 			Aliases:     []string{"s"},
 			Value:       1,
 			Usage:       "number of snippets to display",
 		},
 		&cli.BoolFlag{
-			Destination: &internal.IncludeHidden,
+			Destination: &core.IncludeHidden,
 			Name:        "hidden",
 			Usage:       "include hidden files",
 		},
 		&cli.StringSliceFlag{
-			Destination: internal.AllowListExtensions,
+			Destination: core.AllowListExtensions,
 			Name:        "include-ext",
 			Aliases:     []string{"i"},
 			Usage:       "limit to file extensions (N.B. case sensitive) [comma separated list: e.g. go,java,js,C,cpp]",
 		},
 		&cli.BoolFlag{
-			Destination: &internal.FindRoot,
+			Destination: &core.FindRoot,
 			Name:        "find-root",
 			Aliases:     []string{"r"},
 			Usage:       "attempts to find the root of this repository by traversing in reverse looking for .git or .hg",
 		},
 		&cli.StringSliceFlag{
-			Destination: &internal.PathDenylist,
+			Destination: &core.PathDenylist,
 			Name:        "exclude-dir",
 			Value:       cli.NewStringSlice(".git", ".hg", ".svn", ".jj"),
 			Usage:       "directories to exclude",
 		},
 		&cli.BoolFlag{
-			Destination: &internal.CaseSensitive,
+			Destination: &core.CaseSensitive,
 			Name:        "case-sensitive",
 			Aliases:     []string{"c"},
 			Usage:       "make the search case sensitive",
 		},
 		&cli.StringFlag{
-			Destination: &internal.SearchTemplate,
+			Destination: &core.SearchTemplate,
 			Name:        "template-search",
 			Usage:       "path to search template for custom styling",
 		},
 		&cli.StringFlag{
-			Destination: &internal.DisplayTemplate,
+			Destination: &core.DisplayTemplate,
 			Name:        "template-display",
 			Usage:       "path to display template for custom styling",
 		},
 		&cli.StringSliceFlag{
-			Destination: &internal.LocationExcludePattern,
+			Destination: &core.LocationExcludePattern,
 			Name:        "exclude-pattern",
 			Aliases:     []string{"x"},
 			Usage:       "file and directory locations matching case sensitive patterns will be ignored [comma separated list: e.g. vendor,_test.go]",
 		},
 		&cli.BoolFlag{
-			Destination: &internal.IncludeMinified,
+			Destination: &core.IncludeMinified,
 			Name:        "min",
 			Usage:       "include minified files",
 		},
 		&cli.IntFlag{
-			Destination: &internal.MinifiedLineByteLength,
+			Destination: &core.MinifiedLineByteLength,
 			Name:        "min-line-length",
 			Value:       255,
 			Usage:       "number of bytes per average line for file to be considered minified",
 		},
 		&cli.IntFlag{
-			Destination: &internal.MaxReadSizeBytes,
+			Destination: &core.MaxReadSizeBytes,
 			Name:        "max-read-size-bytes",
 			Value:       1_000_000,
 			Usage:       "number of bytes to read into a file with the remaining content ignored",
 		},
 		&cli.StringFlag{
-			Destination: &internal.Format,
+			Destination: &core.Format,
 			Name:        "format",
 			Aliases:     []string{"f"},
 			Value:       "text",
@@ -175,7 +177,7 @@ The default input field in tui mode supports some nano commands
 			},
 		},
 		&cli.StringFlag{
-			Destination: &internal.Ranker,
+			Destination: &core.Ranker,
 			Name:        "ranker",
 			Value:       "bm25",
 			Usage:       "set ranking algorithm [simple, tfidf, tfidf2, bm25]",
@@ -189,23 +191,23 @@ The default input field in tui mode supports some nano commands
 			},
 		},
 		&cli.StringFlag{
-			Destination: &internal.FileOutput,
+			Destination: &core.FileOutput,
 			Name:        "output",
 			Aliases:     []string{"o"},
 			Usage:       "output filename (default stdout)",
 		},
 		&cli.StringFlag{
-			Destination: &internal.Directory,
+			Destination: &core.Directory,
 			Name:        "dir",
 			Usage:       "directory to search, if not set defaults to current working directory",
 		},
 	},
 	Action: func(ctx *cli.Context) error {
-		internal.SearchString = ctx.Args().Slice()
+		core.SearchString = ctx.Args().Slice()
 
-		internal.DirFilePaths = []string{"."}
-		if strings.TrimSpace(internal.Directory) != "" {
-			internal.DirFilePaths = []string{internal.Directory}
+		core.DirFilePaths = []string{"."}
+		if strings.TrimSpace(core.Directory) != "" {
+			core.DirFilePaths = []string{core.Directory}
 		}
 
 		// If there are arguments we want to print straight out to the console
@@ -213,7 +215,7 @@ The default input field in tui mode supports some nano commands
 		switch {
 		case _httpServer:
 			return internal.StartHttpServer()
-		case len(internal.SearchString) != 0:
+		case len(core.SearchString) != 0:
 			internal.NewConsoleSearch()
 			return nil
 		default:
@@ -223,9 +225,11 @@ The default input field in tui mode supports some nano commands
 }
 
 func main() {
-	// f, _ := os.Create("profile.pprof")
-	// pprof.StartCPUProfile(f)
-	// defer pprof.StopCPUProfile()
+	if core.Pprof {
+		f, _ := os.Create("profile.pprof")
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 
 	if err := _app.Run(os.Args); err != nil {
 		log.Fatalln(err.Error())

@@ -1,12 +1,13 @@
-package internal
+package core
 
 import (
 	"bytes"
 	"cmp"
+	"iter"
 	"slices"
 	"unicode"
 
-	"github.com/rprtr258/cs/str"
+	"github.com/rprtr258/cs/internal/str"
 )
 
 const (
@@ -36,6 +37,13 @@ type Snippet struct {
 	Pos     [2]int
 	Score   float64
 	LinePos [2]int
+}
+
+func iverson(b bool) float64 {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 // Looks through the locations using a sliding window style algorithm
@@ -75,11 +83,10 @@ type Snippet struct {
 // to differ between people. Heck a few times I have been disappointed with results that I was previously happy with.
 // As such this is not tested as much as other methods and you should not rely on the results being static over time
 // as the internals will be modified to produce better results where possible
-func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLength int) []Snippet {
+func ExtractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLength int) iter.Seq[Snippet] {
 	wrapLength := relLength / 2
 
 	rv3 := convertToRelevant(res)
-
 	// if we have a huge amount of matches we want to reduce it because otherwise it takes forever
 	// to return something if the search has many matches.
 	rv3 = rv3[:min(len(rv3), _relevanceCutoff)]
@@ -134,10 +141,8 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 
 		// Now we see if there are any nearby spaces to avoid us cutting in the
 		// middle of a word if we can avoid it
-		sf := false
+		var sf, ef bool
 		m.Pos[0], sf = findSpaceLeft(res, m.Pos[0], _snipSideMax)
-
-		ef := false
 		m.Pos[1], ef = findSpaceRight(res, m.Pos[1], _snipSideMax)
 
 		// Check if we are cutting in the middle of a multibyte char and if so
@@ -175,9 +180,7 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 			// If the word is within a reasonable distance of this word boost the score
 			// weighted by how common that word is so that matches like 'a' impact the rank
 			// less than something like 'cromulent' which in theory should not occur as much
-			if abs(mid-p) < relLength/3 {
-				m.Score += 100 / float64(documentFrequencies[v.Word])
-			}
+			m.Score += iverson(abs(mid-p) < relLength/3) * 100 / float64(documentFrequencies[v.Word])
 		}
 
 		// Try to make it phrase heavy such that if words line up next to each other
@@ -185,27 +188,20 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 		for _, v := range m.Relevant {
 			// Use 2 here because we want to avoid punctuation such that a search for
 			// cat dog will still be boosted if we find cat. dog
-			if abs(rv3[i].Location[0]-v.Location[1]) <= 2 ||
-				abs(rv3[i].Location[1]-v.Location[0]) <= 2 {
-				m.Score += _phraseHeavyBoost
-			}
+			m.Score += _phraseHeavyBoost * iverson(
+				abs(rv3[i].Location[0]-v.Location[1]) <= 2 ||
+					abs(rv3[i].Location[1]-v.Location[0]) <= 2)
 		}
 
 		// If the match is bounded by a space boost it slightly
 		// because its likely to be a better match
-		if rv3[i].Location[0] >= 1 && unicode.IsSpace(rune(res.Content[rv3[i].Location[0]-1])) {
-			m.Score += _spaceBoundBoost
-		}
-		if rv3[i].Location[1] < len(res.Content)-1 && unicode.IsSpace(rune(res.Content[rv3[i].Location[1]+1])) {
-			m.Score += _spaceBoundBoost
-		}
+		m.Score += _spaceBoundBoost*iverson(rv3[i].Location[0] >= 1 && unicode.IsSpace(rune(res.Content[rv3[i].Location[0]-1]))) +
+			_spaceBoundBoost*iverson(rv3[i].Location[1] < len(res.Content)-1 && unicode.IsSpace(rune(res.Content[rv3[i].Location[1]+1]))) +
 
-		// If the word is an exact match to what the user typed boost it
-		// So while the search may be case insensitive the ranking of
-		// the snippet does consider case when boosting ever so slightly
-		if string(res.Content[rv3[i].Location[0]:rv3[i].Location[1]]) == rv3[i].Word {
-			m.Score += _exactMatchBoost
-		}
+			// If the word is an exact match to what the user typed boost it
+			// So while the search may be case insensitive the ranking of
+			// the snippet does consider case when boosting ever so slightly
+			_exactMatchBoost*iverson(string(res.Content[rv3[i].Location[0]:rv3[i].Location[1]]) == rv3[i].Word)
 
 		// This mod applies over the whole score because we want to most unique words to appear in the middle
 		// of the snippet over those where it is on the edge which this should achieve even if it means
@@ -223,14 +219,15 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 	var bestMatchesClean []bestMatch
 	var ranges [][2]int
 	for _, b := range bestMatches {
-		isOverlap := false
-		for _, r := range ranges {
-			if r[0] <= b.Pos[0] && b.Pos[0] <= r[1] ||
-				r[0] <= b.Pos[1] && b.Pos[1] <= r[1] {
-				isOverlap = true
-				break
+		isOverlap := func() bool {
+			for _, r := range ranges {
+				if r[0] <= b.Pos[0] && b.Pos[0] <= r[1] ||
+					r[0] <= b.Pos[1] && b.Pos[1] <= r[1] {
+					return true
+				}
 			}
-		}
+			return false
+		}()
 
 		if !isOverlap {
 			ranges = append(ranges, b.Pos)
@@ -241,32 +238,32 @@ func extractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 	// Limit to the 20 best matches
 	bestMatchesClean = bestMatchesClean[:min(len(bestMatchesClean), 20)]
 
-	snippets := make([]Snippet, len(bestMatchesClean))
-	for i, b := range bestMatchesClean {
-		index := bytes.Index(res.Content, res.Content[b.Pos[0]:b.Pos[1]])
-		startLineOffset := 1
-		for i := 0; i < index; i++ {
-			if res.Content[i] == '\n' {
-				startLineOffset++
-			}
-		}
+	return func(yield func(Snippet) bool) {
+		for _, b := range bestMatchesClean {
+			match := res.Content[b.Pos[0]:b.Pos[1]]
 
-		contentLineOffset := startLineOffset
-		for _, i := range res.Content[b.Pos[0]:b.Pos[1]] {
-			if i == '\n' {
-				contentLineOffset++
-			}
-		}
+			index := bytes.Index(res.Content, match)
 
-		snippets[i] = Snippet{
-			Content: string(res.Content[b.Pos[0]:b.Pos[1]]),
-			Pos:     [2]int{b.Pos[0], b.Pos[1]},
-			Score:   b.Score,
-			LinePos: [2]int{startLineOffset, contentLineOffset},
+			startLineOffset := 1
+			for i := 0; i < index; i++ {
+				if res.Content[i] == '\n' {
+					startLineOffset++
+				}
+			}
+
+			if !yield(Snippet{
+				Content: string(match),
+				Pos:     b.Pos,
+				Score:   b.Score,
+				LinePos: [2]int{
+					startLineOffset,
+					startLineOffset + bytes.Count(match, []byte{'\n'}),
+				},
+			}) {
+				return
+			}
 		}
 	}
-
-	return snippets
 }
 
 // Get all of the locations into a new data structure
@@ -314,8 +311,7 @@ func findSpaceRight(res *FileJob, pos, distance int) (int, bool) {
 // up to distance away. Returns index of space if a space was found and tru
 // otherwise the original index is return and false
 func findSpaceLeft(res *FileJob, pos, distance int) (int, bool) {
-	if len(res.Content) == 0 ||
-		pos >= len(res.Content) {
+	if len(res.Content) == 0 || pos >= len(res.Content) {
 		return pos, false
 	}
 

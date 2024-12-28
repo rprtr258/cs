@@ -1,10 +1,10 @@
-package internal
+package core
 
 import (
 	"iter"
 	"strings"
 
-	"github.com/rprtr258/cs/str"
+	"github.com/rprtr258/cs/internal/str"
 )
 
 const (
@@ -21,21 +21,38 @@ type searchParams struct {
 	Type int64
 }
 
+func strt(
+	s string,
+	fs ...func(string) string,
+) string {
+	for _, f := range fs {
+		s = f(s)
+	}
+	return s
+}
+
+var _queryReplacer = strings.NewReplacer(
+	"file:", "",
+	"filename:", "",
+)
+
 // PreParseQuery pulls out the file: syntax that we support for fuzzy matching
 // where we filter filenames based on this term
 func PreParseQuery(args []string) ([]string, string) {
 	modified := []string{}
 	fuzzy := ""
-
 	for _, s := range args {
-		ls := strings.TrimSpace(strings.ToLower(s))
-		if strings.HasPrefix(ls, "file:") || strings.HasPrefix(ls, "filename:") {
-			fuzzy = strings.TrimSpace(strings.ToLower(strings.TrimSpace(strings.ReplaceAll(strings.ReplaceAll(ls, "file:", ""), "filename:", ""))))
+		if ls := strings.TrimSpace(strings.ToLower(s)); strings.HasPrefix(ls, "file:") || strings.HasPrefix(ls, "filename:") {
+			fuzzy = strt(
+				ls,
+				_queryReplacer.Replace,
+				strings.ToLower,
+				strings.TrimSpace,
+			)
 		} else {
 			modified = append(modified, s)
 		}
 	}
-
 	return modified, fuzzy
 }
 
@@ -43,18 +60,17 @@ func PreParseQuery(args []string) ([]string, string) {
 // to provide real boolean logic with AND OR NOT
 // but does enough for now
 func ParseQuery(args []string) []searchParams {
-	cleanArgs := make([]string, len(args))
 	// Clean the arguments to avoid redundant spaces and the like
+	cleanArgs := make([]string, len(args))
 	for i, arg := range args {
 		cleanArgs[i] = strings.TrimSpace(arg)
 	}
 
+	// With the arguments cleaned up parse out what we need
+	// note that this is very ugly
 	params := []searchParams{}
 	startIndex := 0
 	mode := Default
-
-	// With the arguments cleaned up parse out what we need
-	// note that this is very ugly
 	for i, arg := range cleanArgs {
 		switch {
 		case strings.HasPrefix(arg, `"`):
@@ -131,25 +147,19 @@ func ParseQuery(args []string) []searchParams {
 	}
 
 	// If the user didn't end properly that's ok lets do it for them
-	if mode == Regex {
+	switch mode {
+	case Regex, Quoted:
 		t := strings.Join(cleanArgs[startIndex:], " ")
 		params = append(params, searchParams{
 			Term: t[1:],
-			Type: Regex,
-		})
-	}
-	if mode == Quoted {
-		t := strings.Join(cleanArgs[startIndex:], " ")
-		params = append(params, searchParams{
-			Term: t[1:],
-			Type: Quoted,
+			Type: int64(mode),
 		})
 	}
 
 	return params
 }
 
-const letterDigitFuzzyBytes = `abcdefghijklmnopqrstuvwxyz1234567890`
+const _letterDigitFuzzyBytes = `abcdefghijklmnopqrstuvwxyz1234567890`
 
 // Takes in a term and returns a slice of them which contains all the
 // fuzzy versions of that str with things such as mis-spellings
@@ -169,7 +179,7 @@ func makeFuzzyDistanceOne(term string) iter.Seq[string] {
 
 		// Replace a letter or digit which effectively does transpose for us
 		for i := 0; i < len(term); i++ {
-			for _, b := range letterDigitFuzzyBytes {
+			for _, b := range _letterDigitFuzzyBytes {
 				if !yield(term[:i] + string(b) + term[i+1:]) {
 					return
 				}
@@ -178,7 +188,7 @@ func makeFuzzyDistanceOne(term string) iter.Seq[string] {
 
 		// Insert a letter or digit
 		for i := 0; i < len(term); i++ {
-			for _, b := range letterDigitFuzzyBytes {
+			for _, b := range _letterDigitFuzzyBytes {
 				if !yield(term[:i] + string(b) + term[i:]) {
 					return
 				}
@@ -199,7 +209,7 @@ func makeFuzzyDistanceTwo(term string) iter.Seq[string] {
 
 		// Maybe they forgot to type a letter? Try adding one
 		for i := 0; i < len(term)+1; i++ {
-			for _, b := range letterDigitFuzzyBytes {
+			for _, b := range _letterDigitFuzzyBytes {
 				if !yield(term[:i] + string(b) + term[i:]) {
 					return
 				}

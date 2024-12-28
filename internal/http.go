@@ -3,6 +3,7 @@ package internal
 import (
 	"cmp"
 	"crypto/md5"
+	_ "embed"
 	"encoding/hex"
 	"fmt"
 	"html"
@@ -18,8 +19,63 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 
-	"github.com/rprtr258/cs/str"
+	"github.com/rprtr258/cs/internal/core"
+	"github.com/rprtr258/cs/internal/str"
 )
+
+type searchResult struct {
+	Title    string
+	Location string
+	Content  []template.HTML
+	Pos      [2]int
+	Score    float64
+}
+
+type facetResult struct {
+	Title       string
+	Count       int
+	SearchTerm  string
+	SnippetSize int
+}
+
+type pageResult struct {
+	SearchTerm  string
+	SnippetSize int
+	Value       int
+	Name        string
+	Ext         string
+}
+
+type search struct {
+	SearchTerm          string
+	SnippetSize         int
+	Results             []searchResult
+	ResultsCount        int
+	RuntimeMilliseconds int64
+	ProcessedFileCount  int
+	ExtensionFacet      []facetResult
+	Pages               []pageResult
+	Ext                 string
+}
+
+var (
+	//go:embed templates/display.tmpl
+	_displayTmpl         string
+	_templateHTMLDisplay = template.Must(template.New("display.tmpl").Parse(_displayTmpl))
+
+	//go:embed templates/search.tmpl
+	_searchTmpl         string
+	_templateHTMLSearch = template.Must(template.New("search.tmpl").Parse(_searchTmpl))
+)
+
+func tryParseInt(x string, def int) int {
+	t, err := strconv.Atoi(x)
+	if err != nil {
+		return def
+	}
+
+	return t
+}
 
 func StartHttpServer() error {
 	http.HandleFunc("/file/raw/", func(w http.ResponseWriter, r *http.Request) {
@@ -35,8 +91,8 @@ func StartHttpServer() error {
 	})
 
 	templateDisplay := _templateHTMLDisplay
-	if DisplayTemplate != "" {
-		templateDisplay = template.Must(template.New("display.tmpl").ParseFiles(DisplayTemplate))
+	if core.DisplayTemplate != "" {
+		templateDisplay = template.Must(template.New("display.tmpl").ParseFiles(core.DisplayTemplate))
 	}
 
 	http.HandleFunc("/file/", func(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +109,7 @@ func StartHttpServer() error {
 			Str("path", path).
 			Msg("file view page")
 
-		if strings.TrimSpace(Directory) != "" {
+		if strings.TrimSpace(core.Directory) != "" {
 			path = "/" + path
 		}
 
@@ -76,12 +132,17 @@ func StartHttpServer() error {
 		fmtEnd := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("end_%d", nowNanos()))))
 
 		coloredContent := str.HighlightString(string(content), slices.Values([][2]int{{startPos, endPos}}), fmtBegin, fmtEnd)
-
 		coloredContent = html.EscapeString(coloredContent)
-		coloredContent = strings.ReplaceAll(coloredContent, fmtBegin, fmt.Sprintf(`<strong id="%d">`, startPos))
-		coloredContent = strings.ReplaceAll(coloredContent, fmtEnd, "</strong>")
+		coloredContent = strings.NewReplacer(
+			fmtBegin, fmt.Sprintf(`<strong id="%d">`, startPos),
+			fmtEnd, "</strong>",
+		).Replace(coloredContent)
 
-		err = templateDisplay.Execute(w, fileDisplay{
+		err = templateDisplay.Execute(w, struct {
+			Location            string
+			Content             template.HTML
+			RuntimeMilliseconds int64
+		}{
 			Location:            path,
 			Content:             template.HTML(coloredContent),
 			RuntimeMilliseconds: nowMillis() - startTime,
@@ -92,9 +153,9 @@ func StartHttpServer() error {
 	})
 
 	templateSearch := _templateHTMLSearch
-	if SearchTemplate != "" {
+	if core.SearchTemplate != "" {
 		// If we have been supplied a template then load it up
-		templateSearch = template.Must(template.New("search.tmpl").ParseFiles(SearchTemplate))
+		templateSearch = template.Must(template.New("search.tmpl").ParseFiles(core.SearchTemplate))
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -105,13 +166,12 @@ func StartHttpServer() error {
 		page := tryParseInt(r.URL.Query().Get("p"), 0)
 		pageSize := 20
 
-		var results []*FileJob
-		var fileCount int
-
 		log.Info().
 			Caller().
 			Msg("search page")
 
+		var results []*core.FileJob
+		var fileCount int
 		if query != "" {
 			log.Info().
 				Caller().
@@ -122,39 +182,38 @@ func StartHttpServer() error {
 
 			// If the user asks we should look back till we find the .git or .hg directory and start the search from there
 
-			DirFilePaths = []string{"."}
-			if strings.TrimSpace(Directory) != "" {
-				DirFilePaths = []string{Directory}
+			core.DirFilePaths = []string{"."}
+			if strings.TrimSpace(core.Directory) != "" {
+				core.DirFilePaths = []string{core.Directory}
 			}
-			if FindRoot {
-				DirFilePaths[0] = gocodewalker.FindRepositoryRoot(DirFilePaths[0])
+			if core.FindRoot {
+				core.DirFilePaths[0] = gocodewalker.FindRepositoryRoot(core.DirFilePaths[0])
 			}
 
-			AllowListExtensions = cli.NewStringSlice()
+			core.AllowListExtensions = cli.NewStringSlice()
 			if ext != "" {
-				AllowListExtensions = cli.NewStringSlice(ext)
+				core.AllowListExtensions = cli.NewStringSlice(ext)
 			}
 
 			// walk back through the query to see if we have a shorter one that matches
-			files := FindFiles(query)
+			files := core.FindFiles(query)
 
-			toProcessQueue := make(chan *FileJob, runtime.NumCPU()) // Files to be read into memory for processing
-			summaryQueue := make(chan *FileJob, runtime.NumCPU())   // Files that match and need to be displayed
+			toProcessCh := make(chan *core.FileJob, runtime.NumCPU()) // Files to be read into memory for processing
+			summaryCh := make(chan *core.FileJob, runtime.NumCPU())   // Files that match and need to be displayed
 
-			q, fuzzy := PreParseQuery(strings.Fields(query))
+			q, fuzzy := core.PreParseQuery(strings.Fields(query))
 
-			fileReaderWorker := NewFileReaderWorker(files, toProcessQueue, fuzzy)
-			fileSearcher := NewSearcherWorker(toProcessQueue, summaryQueue, q)
+			fileReaderWorker := core.NewFileReaderWorker(files, toProcessCh, fuzzy)
 
 			go fileReaderWorker.Start()
-			go fileSearcher.Start()
+			go core.NewSearcherWorker(toProcessCh, summaryCh, q)
 
-			for f := range summaryQueue {
+			for f := range summaryCh {
 				results = append(results, f)
 			}
 
 			fileCount = fileReaderWorker.GetFileCount()
-			rankResults(fileReaderWorker.GetFileCount(), results)
+			core.RankResults(fileReaderWorker.GetFileCount(), results)
 		}
 
 		// Create a random str to define where the start and end of
@@ -164,34 +223,28 @@ func StartHttpServer() error {
 		fmtBegin := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("begin_%d", nowNanos()))))
 		fmtEnd := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("end_%d", nowNanos()))))
 
-		documentTermFrequency := calculateDocumentTermFrequency(results)
-
-		var searchResults []searchResult
-		extensionFacets := map[string]int{}
+		documentTermFrequency := core.CalculateDocumentTermFrequency(slices.Values(results))
 
 		// if we have more than the page size of results, lets just show the first page
-		displayResults := results
 		pages := calculatePages(results, pageSize, query, snippetLength, ext)
 
+		displayResults := results
 		if displayResults != nil && len(displayResults) > pageSize {
 			displayResults = displayResults[:pageSize]
 		}
 		if page != 0 && page <= len(pages) {
-			end := page*pageSize + pageSize
-			if end > len(results) {
-				end = len(results)
-			}
-
-			displayResults = results[page*pageSize : end]
+			displayResults = results[page*pageSize : min(len(results), page*pageSize+pageSize)]
 		}
 
 		// loop over all results so we can get the facets
+		extensionFacets := map[string]int{}
 		for _, res := range results {
-			extensionFacets[gocodewalker.GetExtension(res.Filename)] = extensionFacets[gocodewalker.GetExtension(res.Filename)] + 1
+			extensionFacets[gocodewalker.GetExtension(res.Filename)] += 1
 		}
 
+		searchResults := make([]searchResult, 0, len(displayResults))
 		for _, res := range displayResults {
-			v3 := extractRelevantV3(res, documentTermFrequency, snippetLength)[0]
+			v3, _ := first(core.ExtractRelevantV3(res, documentTermFrequency, snippetLength))
 
 			// We have the snippet so now we need to highlight it
 			// we get all the locations that fall in the snippet length
@@ -219,8 +272,10 @@ func StartHttpServer() error {
 			if v3.Pos[1] != 0 {
 				coloredContent = str.HighlightString(v3.Content, l, fmtBegin, fmtEnd)
 				coloredContent = html.EscapeString(coloredContent)
-				coloredContent = strings.ReplaceAll(coloredContent, fmtBegin, "<strong>")
-				coloredContent = strings.ReplaceAll(coloredContent, fmtEnd, "</strong>")
+				coloredContent = strings.NewReplacer(
+					fmtBegin, "<strong>",
+					fmtEnd, "</strong>",
+				).Replace(coloredContent)
 			}
 
 			searchResults = append(searchResults, searchResult{
@@ -250,9 +305,9 @@ func StartHttpServer() error {
 
 	log.Info().
 		Caller().
-		Str("address", Address).
+		Str("address", core.Address).
 		Msg("ready to serve requests")
-	return http.ListenAndServe(Address, nil)
+	return http.ListenAndServe(core.Address, nil)
 }
 
 func calculateExtensionFacet(extensionFacets map[string]int, query string, snippetLength int) []facetResult {
@@ -268,17 +323,17 @@ func calculateExtensionFacet(extensionFacets map[string]int, query string, snipp
 
 	slices.SortFunc(ef, func(i, j facetResult) int {
 		// If the same count sort by the name to ensure it's consistent on the display
-		if i.Count != j.Count {
-			return cmp.Compare(i.Count, j.Count)
-		}
-		return strings.Compare(i.Title, j.Title)
+		return cmp.Or(
+			cmp.Compare(i.Count, j.Count),
+			strings.Compare(i.Title, j.Title),
+		)
 	})
 
 	return ef
 }
 
 // TODO: simplify to only third case
-func calculatePages(results []*FileJob, pageSize int, query string, snippetLength int, ext string) []pageResult {
+func calculatePages(results []*core.FileJob, pageSize int, query string, snippetLength int, ext string) []pageResult {
 	if len(results) == 0 {
 		return nil
 	}
@@ -303,13 +358,4 @@ func calculatePages(results []*FileJob, pageSize int, query string, snippetLengt
 		}
 	}
 	return pages
-}
-
-func tryParseInt(x string, def int) int {
-	t, err := strconv.Atoi(x)
-	if err != nil {
-		return def
-	}
-
-	return t
 }

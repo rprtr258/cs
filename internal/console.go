@@ -3,72 +3,67 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/fatih/color"
 	"github.com/mattn/go-isatty"
-	"github.com/rprtr258/cs/str"
+
+	"github.com/rprtr258/cs/internal/core"
+	"github.com/rprtr258/cs/internal/str"
 )
 
 func NewConsoleSearch() {
-	files := FindFiles(strings.Join(SearchString, " "))
-	toProcessQueue := make(chan *FileJob, runtime.NumCPU()) // Files to be read into memory for processing
-	summaryQueue := make(chan *FileJob, runtime.NumCPU())   // Files that match and need to be displayed
+	files := core.FindFiles(strings.Join(core.SearchString, " "))
+	toProcessCh := make(chan *core.FileJob, runtime.NumCPU()) // Files to be read into memory for processing
+	summaryCh := make(chan *core.FileJob, runtime.NumCPU())   // Files that match and need to be displayed
 
 	// parse the query here to get the fuzzy stuff
-	query, fuzzy := PreParseQuery(SearchString)
-	fileReaderWorker := NewFileReaderWorker(files, toProcessQueue, fuzzy)
-
-	fileSearcher := NewSearcherWorker(toProcessQueue, summaryQueue, query)
-
-	resultSummarizer := NewResultSummarizer(summaryQueue, fileReaderWorker, SnippetCount)
+	query, fuzzy := core.PreParseQuery(core.SearchString)
+	fileReaderWorker := core.NewFileReaderWorker(files, toProcessCh, fuzzy)
 
 	go fileReaderWorker.Start()
-	go fileSearcher.Start()
-	resultSummarizer.Start()
+	go core.NewSearcherWorker(toProcessCh, summaryCh, query)
+	NewResultSummarizer(summaryCh, fileReaderWorker, core.SnippetCount)
 }
 
 type ResultSummarizer struct {
-	input            chan *FileJob
+	input            chan *core.FileJob
 	ResultLimit      int
-	FileReaderWorker *FileReaderWorker
+	FileReaderWorker *core.FileReaderWorker
 	SnippetCount     int
 	NoColor          bool
 	Format           string
 	FileOutput       string
 }
 
-func NewResultSummarizer(input chan *FileJob, fileReaderWorker *FileReaderWorker, snippetCount int) ResultSummarizer {
-	return ResultSummarizer{
+func NewResultSummarizer(input chan *core.FileJob, fileReaderWorker *core.FileReaderWorker, snippetCount int) {
+	f := &ResultSummarizer{
 		input:            input,
 		ResultLimit:      -1,
 		SnippetCount:     snippetCount,
-		Format:           Format,
-		FileOutput:       FileOutput,
+		Format:           core.Format,
+		FileOutput:       core.FileOutput,
 		FileReaderWorker: fileReaderWorker,
 		NoColor: os.Getenv("TERM") == "dumb" ||
 			!isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()),
 	}
-}
 
-func (f *ResultSummarizer) Start() {
 	// First step is to collect results so we can rank them
-	results := []*FileJob{}
+	results := []*core.FileJob{}
 	for res := range f.input {
 		results = append(results, res)
-	}
 
-	// Consider moving this check into processor to save on CPU burn there at some point in
-	// the future
-	if f.ResultLimit != -1 {
-		if len(results) > f.ResultLimit {
-			results = results[:f.ResultLimit]
+		// TODO: Consider moving this check into processor to save on CPU burn there at some point in the future
+		if f.ResultLimit != -1 && len(results) >= f.ResultLimit {
+			break
 		}
 	}
 
-	rankResults(f.FileReaderWorker.GetFileCount(), results)
+	core.RankResults(f.FileReaderWorker.GetFileCount(), results)
 
 	switch f.Format {
 	case "json":
@@ -80,14 +75,15 @@ func (f *ResultSummarizer) Start() {
 	}
 }
 
-func (f *ResultSummarizer) formatVimGrep(results []*FileJob) {
-	var vimGrepOutput []string
-	SnippetLength = 50 // vim quickfix puts each hit on its own line.
-	documentFrequency := calculateDocumentTermFrequency(results)
+func (f *ResultSummarizer) formatVimGrep(results []*core.FileJob) {
+	// TODO: wtf, changing global here is needed?
+	core.SnippetLength = 50 // vim quickfix puts each hit on its own line.
+	documentFrequency := core.CalculateDocumentTermFrequency(slices.Values(results))
 
 	// Cycle through files with matches and process each snippets inside it.
+	var vimGrepOutput []string
 	for _, res := range results {
-		snippets := extractRelevantV3(res, documentFrequency, SnippetLength)
+		snippets := slices.Collect(core.ExtractRelevantV3(res, documentFrequency, core.SnippetLength))
 		if len(snippets) > f.SnippetCount {
 			snippets = snippets[:f.SnippetCount]
 		}
@@ -98,34 +94,33 @@ func (f *ResultSummarizer) formatVimGrep(results []*FileJob) {
 			vimGrepOutput = append(vimGrepOutput, line)
 		}
 	}
-
-	printable := strings.Join(vimGrepOutput, "\n")
-	fmt.Println(printable)
+	fmt.Println(strings.Join(vimGrepOutput, "\n"))
 }
 
-func (f *ResultSummarizer) formatJson(results []*FileJob) {
-	var jsonResults []jsonResult
+func (f *ResultSummarizer) formatJson(results []*core.FileJob) {
+	documentFrequency := core.CalculateDocumentTermFrequency(slices.Values(results))
 
-	documentFrequency := calculateDocumentTermFrequency(results)
-
+	jsonResults := make([]jsonResult, 0, len(results))
 	for _, res := range results {
-		v3 := extractRelevantV3(res, documentFrequency, SnippetLength)[0]
+		v3, _ := first(core.ExtractRelevantV3(res, documentFrequency, core.SnippetLength))
 
 		// We have the snippet so now we need to highlight it
 		// we get all the locations that fall in the snippet length
 		// and then remove the length of the snippet cut which
 		// makes out location line up with the snippet size
-		var l [][2]int
-		for _, value := range res.MatchLocations {
-			for _, s := range value {
-				if s[0] >= v3.Pos[0] && s[1] <= v3.Pos[1] {
-					l = append(l, [2]int{
+		l := slices.Collect(func(yield func([2]int) bool) {
+			for _, value := range res.MatchLocations {
+				for _, s := range value {
+					p := [2]int{
 						s[0] - v3.Pos[0],
-						s[1] - v3.Pos[0],
-					})
+						s[1] - v3.Pos[1],
+					}
+					if p[0] >= 0 && p[1] <= 0 && !yield(p) {
+						return
+					}
 				}
 			}
-		}
+		})
 
 		jsonResults = append(jsonResults, jsonResult{
 			Filename:       res.Filename,
@@ -136,16 +131,17 @@ func (f *ResultSummarizer) formatJson(results []*FileJob) {
 		})
 	}
 
-	jsonString, _ := json.Marshal(jsonResults)
+	var w io.Writer
 	if f.FileOutput == "" {
-		fmt.Println(string(jsonString))
+		w = os.Stdout
 	} else {
-		_ = os.WriteFile(FileOutput, jsonString, 0o600)
-		fmt.Println("results written to " + FileOutput)
+		w, _ = os.OpenFile(core.FileOutput, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
+		fmt.Println("results written to " + core.FileOutput)
 	}
+	_ = json.NewEncoder(w).Encode(jsonResults)
 }
 
-func (f *ResultSummarizer) formatDefault(results []*FileJob) {
+func (f *ResultSummarizer) formatDefault(results []*core.FileJob) {
 	fmtBegin := "\033[1;31m"
 	fmtEnd := "\033[0m"
 	if f.NoColor {
@@ -153,10 +149,10 @@ func (f *ResultSummarizer) formatDefault(results []*FileJob) {
 		fmtEnd = ""
 	}
 
-	documentFrequency := calculateDocumentTermFrequency(results)
+	documentFrequency := core.CalculateDocumentTermFrequency(slices.Values(results))
 
-	for _, res := range results {
-		snippets := extractRelevantV3(res, documentFrequency, SnippetLength)
+	for _, result := range results {
+		snippets := slices.Collect(core.ExtractRelevantV3(result, documentFrequency, core.SnippetLength))
 		if len(snippets) > f.SnippetCount {
 			snippets = snippets[:f.SnippetCount]
 		}
@@ -166,7 +162,7 @@ func (f *ResultSummarizer) formatDefault(results []*FileJob) {
 			lines += fmt.Sprintf("%d-%d ", snippets[i].LinePos[0], snippets[i].LinePos[1])
 		}
 
-		color.Magenta(fmt.Sprintf("%s Lines %s(%.3f)", res.Location, lines, res.Score))
+		color.Magenta(fmt.Sprintf("%s Lines %s(%.3f)", result.Location, lines, result.Score))
 
 		for i := 0; i < len(snippets); i++ {
 			// We have the snippet so now we need to highlight it
@@ -174,7 +170,7 @@ func (f *ResultSummarizer) formatDefault(results []*FileJob) {
 			// and then remove the length of the snippet cut which
 			// makes out location line up with the snippet size
 			l := func(yield func([2]int) bool) {
-				for _, value := range res.MatchLocations {
+				for _, value := range result.MatchLocations {
 					for _, s := range value {
 						if s[0] >= snippets[i].Pos[0] && s[1] <= snippets[i].Pos[1] {
 							if !yield([2]int{

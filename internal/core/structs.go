@@ -1,4 +1,4 @@
-package internal
+package core
 
 // FileJob - results of processing internally before sent to the formatter
 type FileJob struct {

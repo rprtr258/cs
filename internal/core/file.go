@@ -1,4 +1,4 @@
-package internal
+package core
 
 import (
 	"bytes"
@@ -13,18 +13,7 @@ import (
 	"github.com/lithammer/fuzzysearch/fuzzy"
 )
 
-var (
-	// TODO: make local
-	DirFilePaths             = []string{}
-	searchToFileMatchesCache = map[string][]string{}
-)
-
-// var searchToFileMatchesCacheMutex = sync.Mutex{}
 func FindFiles(query string) chan *gocodewalker.File {
-	return walkFiles()
-}
-
-func walkFiles() chan *gocodewalker.File {
 	// Now we need to run through every file closed by the filewalker when done
 	fileListQueue := make(chan *gocodewalker.File, 1000)
 
@@ -67,8 +56,7 @@ func readFileContent(f *gocodewalker.File) []byte {
 	defer fil.Close()
 
 	byteSlice := make([]byte, MaxReadSizeBytes)
-	_, err = fil.Read(byteSlice)
-	if err != nil {
+	if _, err = fil.Read(byteSlice); err != nil {
 		return nil
 	}
 
@@ -184,7 +172,6 @@ func (f *FileReaderWorker) Start() {
 			wg.Done()
 		}()
 	}
-
 	wg.Wait()
 	close(f.output)
 }

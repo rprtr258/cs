@@ -1,12 +1,13 @@
-package internal
+package core
 
 import (
 	"cmp"
+	"iter"
 	"math"
 	"slices"
 	"strings"
 
-	"github.com/rprtr258/cs/str"
+	"github.com/rprtr258/cs/internal/str"
 )
 
 // Takes in the search terms and results and applies chained
@@ -15,7 +16,7 @@ import (
 // Note that this method will evolve over time
 // and as such you should never rely on the returned results being
 // the same
-func rankResults(corpusCount int, results []*FileJob) []*FileJob {
+func RankResults(corpusCount int, results []*FileJob) []*FileJob {
 	// needs to come first because it resets the scores
 	switch Ranker {
 	case "simple":
@@ -177,8 +178,6 @@ func rankResultsTFIDF(corpusCount int, results []*FileJob, documentFrequencies m
 //
 //	TF + k1 * (1 - b + b * D / L)
 func rankResultsBM25(corpusCount int, results []*FileJob, documentFrequencies map[string]int) []*FileJob {
-	var weight float64
-
 	// Get the average number of words across all documents because we need that in BM25 to calculate correctly
 	var averageDocumentWords float64
 	for i := 0; i < len(results); i++ {
@@ -186,9 +185,10 @@ func rankResultsBM25(corpusCount int, results []*FileJob, documentFrequencies ma
 	}
 	averageDocumentWords /= float64(len(results))
 
-	k1 := 1.2
-	b := 0.75
+	const k1 = 1.2
+	const b = 0.75
 
+	var weight float64
 	for i := 0; i < len(results); i++ {
 		weight = 0
 
@@ -217,21 +217,19 @@ func rankResultsBM25(corpusCount int, results []*FileJob, documentFrequencies ma
 		// that
 		results[i].Score = weight
 	}
-
 	return results
 }
 
 // Calculate the document term frequency for all words across all documents
 // letting us know how many times a term appears across the corpus
 // This is mostly used for snippet extraction
-func calculateDocumentTermFrequency(results []*FileJob) map[string]int {
+func CalculateDocumentTermFrequency(results iter.Seq[*FileJob]) map[string]int {
 	documentFrequencies := map[string]int{}
-	for i := 0; i < len(results); i++ {
-		for k := range results[i].MatchLocations {
-			documentFrequencies[k] += len(results[i].MatchLocations[k])
+	for result := range results {
+		for k := range result.MatchLocations {
+			documentFrequencies[k] += len(result.MatchLocations[k])
 		}
 	}
-
 	return documentFrequencies
 }
 
@@ -245,7 +243,6 @@ func calculateDocumentFrequency(results []*FileJob) map[string]int {
 			documentFrequencies[k]++
 		}
 	}
-
 	return documentFrequencies
 }
 
@@ -255,10 +252,9 @@ func calculateDocumentFrequency(results []*FileJob) map[string]int {
 // that are 100% equal based on the two criteria we use.
 func sortResults(results []*FileJob) {
 	slices.SortFunc(results, func(i, j *FileJob) int {
-		if i.Score != j.Score {
-			return cmp.Compare(j.Score, i.Score)
-		}
-
-		return strings.Compare(i.Location, j.Location)
+		return cmp.Or(
+			cmp.Compare(j.Score, i.Score),
+			strings.Compare(i.Location, j.Location),
+		)
 	})
 }

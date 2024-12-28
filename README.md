@@ -1,5 +1,4 @@
-codespelunker (cs)
-----------------------
+# codespelunker (cs)
 
 A command line search tool. Allows you to search over code or text files in the current directory either on
 the console, via a TUI or HTTP server, using some boolean queries or regular expressions.
@@ -29,7 +28,7 @@ Why use cs?
  - Cross-platform (probably needs the new Windows terminal though)
 
 The reason `cs` exists at all is because I was running into limitations using `rg TERM | fzf` and decided to solve my own
-problem. 
+problem.
 
 ### Install
 
@@ -86,7 +85,7 @@ caching of results to speed things up.
 
 #### How does the ranking work then?
 
-Standard BM25 or TF/IDF or the modified TF/IDF in Lucene https://opensourceconnections.com/blog/2015/10/16/bm25-the-next-generation-of-lucene-relevation/ 
+Standard BM25 or TF/IDF or the modified TF/IDF in Lucene https://opensourceconnections.com/blog/2015/10/16/bm25-the-next-generation-of-lucene-relevation/
 which dampens the impact of term frequency.
 
 Technically speaking it's not accurate because it calculates the weights based on what it matched on and not everything,
@@ -95,11 +94,11 @@ you expect?
 
 #### How do you get the snippets?
 
-It's not fun... https://github.com/boyter/cs/blob/master/snippet.go Have a look at the code. 
+It's not fun... https://github.com/boyter/cs/blob/master/snippet.go Have a look at the code.
 
-It works by passing the document content to extract the snippet from and all the match locations for each term. 
-It then looks through each location for each word, and checks on either side looking for terms close to it. 
-It then ranks on the term frequency for the term we are checking around and rewards rarer terms. 
+It works by passing the document content to extract the snippet from and all the match locations for each term.
+It then looks through each location for each word, and checks on either side looking for terms close to it.
+It then ranks on the term frequency for the term we are checking around and rewards rarer terms.
 It also rewards more matches, closer matches, exact case matches and matches that are whole words.
 
 For more info read the "Snippet Extraction AKA I am PHP developer" section of this blog post https://boyter.org/posts/abusing-aws-to-make-a-search-engine/
@@ -110,11 +109,11 @@ It's a little brutalist.
 
 <img alt="scc" src=https://github.com/boyter/cs/raw/master/cs_http.png>
 
-You can change its look and feel using `--template-display` and `--template-search`. See https://github.com/boyter/cs/tree/master/asset/templates
+You can change its look and feel using `--template-display` and `--template-search`. See https://github.com/boyter/cs/tree/master/internal/templates
 for example templates you can use to modify things.
 
 ```shell
-cs -d --template-display ./asset/templates/display.tmpl --template-search ./asset/templates/search.tmpl
+cs -d --template-display ./internal/templates/display.tmpl --template-search ./internal/templates/search.tmpl
 ```
 
 ### Usage

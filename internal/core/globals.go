@@ -1,14 +1,20 @@
-package internal
+package core
 
 import "github.com/urfave/cli/v2"
 
 const (
 	// Verbose enables verbose logging output
 	Verbose = false
+
+	Pprof = false
 )
 
 // Flags set via the CLI which control how the output is displayed
+// TODO: move to struct
 var (
+	// TODO: make local
+	DirFilePaths = []string{}
+
 	// Include minified files
 	IncludeMinified = false
 

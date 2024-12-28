@@ -1,4 +1,4 @@
-package internal
+package core
 
 import (
 	"regexp"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rprtr258/cs/str"
+	"github.com/rprtr258/cs/internal/str"
 )
 
 type SearcherWorker struct {
@@ -23,22 +23,20 @@ type SearcherWorker struct {
 	InstanceId    int
 }
 
-func NewSearcherWorker(input, output chan *FileJob, query []string) *SearcherWorker {
-	return &SearcherWorker{
+func NewSearcherWorker(input, output chan *FileJob, query []string) {
+	f := &SearcherWorker{
 		input:        input,
 		output:       output,
 		SearchString: query,
 		MatchLimit:   -1, // sensible default
 	}
-}
 
-// Does the actual processing of stats and as such contains the hot path CPU call
-func (f *SearcherWorker) Start() {
+	// Does the actual processing of stats and as such contains the hot path CPU call
+
 	// Build out the search params
 	f.searchParams = ParseQuery(f.SearchString)
 
 	var wg sync.WaitGroup
-
 	for i := 0; i < runtime.NumCPU(); i++ {
 		wg.Add(1)
 		go func() {
@@ -122,7 +120,6 @@ func (f *SearcherWorker) Start() {
 			}
 		}()
 	}
-
 	wg.Wait()
 	close(f.output)
 }
