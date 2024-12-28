@@ -10,7 +10,7 @@ import (
 	"github.com/rprtr258/cs/internal"
 )
 
-const _version = "1.3.0"
+const _version = "1.4.0"
 
 // _httpServer indicates if we should fork into HTTP mode or not
 var _httpServer = false
