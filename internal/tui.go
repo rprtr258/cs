@@ -264,18 +264,30 @@ var debounced = NewDebouncer(200 * time.Millisecond)
 func NewTuiSearch() error {
 	// Create the elements we use to display the code results here
 	for range 50 {
+		title := tview.NewTextView().
+			SetDynamicColors(true).
+			SetRegions(true).
+			ScrollToBeginning()
+		title.SetBackgroundColor(tcell.Color16)
+
+		body := tview.NewTextView().
+			SetDynamicColors(true).
+			SetRegions(true).
+			ScrollToBeginning()
+		body.SetBackgroundColor(tcell.Color16)
+
+		spacerOne := tview.NewTextView()
+		spacerOne.SetBackgroundColor(tcell.Color16)
+
+		spacerTwo := tview.NewTextView()
+		spacerTwo.SetBackgroundColor(tcell.Color16)
+
 		tuiDisplayResults = append(tuiDisplayResults, displayResult{
-			Title: tview.NewTextView().
-				SetDynamicColors(true).
-				SetRegions(true).
-				ScrollToBeginning(),
-			Body: tview.NewTextView().
-				SetDynamicColors(true).
-				SetRegions(true).
-				ScrollToBeginning(),
+			Title:      title,
+			Body:       body,
 			BodyHeight: -1,
-			SpacerOne:  tview.NewTextView(),
-			SpacerTwo:  tview.NewTextView(),
+			SpacerOne:  spacerOne,
+			SpacerTwo:  spacerTwo,
 		})
 	}
 
@@ -286,11 +298,11 @@ func NewTuiSearch() error {
 		Mutex:      sync.Mutex{},
 		SpinString: `\|/-`,
 	}
+
 	// input field which deals with the user input for the main search which ultimately triggers a search
 	inputField = tview.NewInputField().
 		SetFieldBackgroundColor(tcell.Color16).
 		SetLabel("> ").
-		SetLabelColor(tcell.ColorWhite).
 		SetFieldWidth(0).
 		SetDoneFunc(func(key tcell.Key) {
 			// this deals with the keys that trigger "done" functions such as up/down/enter
@@ -321,6 +333,7 @@ func NewTuiSearch() error {
 			applicationController.SetQuery(strings.TrimSpace(text))
 			debounced(applicationController.DoSearch)
 		})
+	inputField.SetLabelStyle(inputField.GetLabelStyle().Background(tcell.Color16))
 
 	// Decide how large a snippet we should be displaying
 	snippetInputField = tview.NewInputField().
@@ -367,6 +380,7 @@ func NewTuiSearch() error {
 		SetDynamicColors(false).
 		SetRegions(false).
 		ScrollToBeginning()
+	statusView.SetBackgroundColor(tcell.Color16)
 
 	// setup the flex containers to have everything rendered neatly
 	queryFlex = tview.NewFlex().SetDirection(tview.FlexColumn).
@@ -385,7 +399,6 @@ func NewTuiSearch() error {
 
 	overallFlex = tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(queryFlex, 1, 0, false).
-		AddItem(nil, 1, 0, false).
 		AddItem(statusView, 1, 0, false).
 		AddItem(resultsFlex, 0, 1, false)
 
