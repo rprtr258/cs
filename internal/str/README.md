@@ -9,7 +9,7 @@ You can find all details here https://pkg.go.dev/github.com/boyter/go-string
 
 Probably the most useful methods are IndexAll and IndexAllIgnoreCase which for string literal searches should be drop in replacements for regexp.FindAllIndex while totally avoiding the regular expression engine and as such being much faster.
 
-Some quick benchmarks using a simple program which opens a 550MB file and searches over it in memory. 
+Some quick benchmarks using a simple program which opens a 550MB file and searches over it in memory.
 Each search is done three times, the first using regexp.FindAllIndex and the second using IndexAllIgnoreCase.
 
 For this specific example the wall clock time to run is at least 10x less, but with the same matching results.
@@ -52,7 +52,7 @@ func main() {
 
 	fmt.Println("\nFindAllIndex (regex)")
 	r := regexp.MustCompile(regexp.QuoteMeta(arg1))
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		start = time.Now()
 		all := r.FindAllIndex(b, -1)
 		elapsed = time.Since(start)
@@ -60,7 +60,7 @@ func main() {
 	}
 
 	fmt.Println("\nIndexAll (custom)")
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		start = time.Now()
 		all := str.IndexAll(haystack, arg1, -1)
 		elapsed = time.Since(start)
@@ -69,7 +69,7 @@ func main() {
 
 	r = regexp.MustCompile(`(?i)` + regexp.QuoteMeta(arg1))
 	fmt.Println("\nFindAllIndex (regex ignore case)")
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		start = time.Now()
 		all := r.FindAllIndex(b, -1)
 		elapsed = time.Since(start)
@@ -77,14 +77,13 @@ func main() {
 	}
 
 	fmt.Println("\nIndexAllIgnoreCase (custom)")
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		start = time.Now()
 		all := str.IndexAllIgnoreCase(haystack, arg1, -1)
 		elapsed = time.Since(start)
 		fmt.Println("Scan took", elapsed, len(all))
 	}
 }
-
 ```
 
 Note that it performs best with real documents and wost when searching over random data. Depending on what you are searching you may have a similar speed up or a marginal one.
@@ -104,4 +103,4 @@ The argument locations accepts output from regexp.FindAllIndex or the included `
 
 All code is dual-licenced as either MIT or Unlicence. Your choice when you use it.
 
-Note that as an Australian I cannot put this into the public domain, hence the choice most liberal licences I can find. 
+Note that as an Australian I cannot put this into the public domain, hence the choice most liberal licences I can find.

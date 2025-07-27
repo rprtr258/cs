@@ -21,7 +21,7 @@ func BenchmarkFindAllIndex(b *testing.B) {
 	r := regexp.MustCompile(`test`)
 	haystack := []byte(testMatchEndCase)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -30,7 +30,7 @@ func BenchmarkFindAllIndex(b *testing.B) {
 }
 
 func BenchmarkIndexAll(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAll(testMatchEndCase, "test", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -42,7 +42,7 @@ func BenchmarkFindAllIndexLarge(b *testing.B) {
 	r := regexp.MustCompile(`test`)
 	haystack := []byte(testMatchEndCaseLarge)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -51,7 +51,7 @@ func BenchmarkFindAllIndexLarge(b *testing.B) {
 }
 
 func BenchmarkIndexAllLarge(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAll(testMatchEndCaseLarge, "test", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -63,7 +63,7 @@ func BenchmarkFindAllIndexUnicode(b *testing.B) {
 	r := regexp.MustCompile(`test`)
 	haystack := []byte(testUnicodeMatchEndCase)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -72,7 +72,7 @@ func BenchmarkFindAllIndexUnicode(b *testing.B) {
 }
 
 func BenchmarkIndexAllUnicode(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAll(testUnicodeMatchEndCase, "test", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -84,7 +84,7 @@ func BenchmarkFindAllIndexUnicodeLarge(b *testing.B) {
 	r := regexp.MustCompile(`test`)
 	haystack := []byte(testUnicodeMatchEndCaseLarge)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -93,7 +93,7 @@ func BenchmarkFindAllIndexUnicodeLarge(b *testing.B) {
 }
 
 func BenchmarkIndexAllUnicodeLarge(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAll(testUnicodeMatchEndCaseLarge, "test", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -108,7 +108,7 @@ func BenchmarkFindAllIndexManyPartialMatches(b *testing.B) {
 	r := regexp.MustCompile(`1test`)
 	haystack := []byte(testMatchEndCase)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -120,7 +120,7 @@ func BenchmarkFindAllIndexManyPartialMatches(b *testing.B) {
 // partial matches where the first character in the needle
 // can be found throughout the haystack
 func BenchmarkIndexAllManyPartialMatches(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAll(testMatchEndCase, "1test", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -134,8 +134,7 @@ func BenchmarkIndexAllManyPartialMatches(b *testing.B) {
 func BenchmarkFindAllIndexUnicodeManyPartialMatches(b *testing.B) {
 	r := regexp.MustCompile(`Ⱥtest`)
 	haystack := []byte(testUnicodeMatchEndCase)
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -147,7 +146,7 @@ func BenchmarkFindAllIndexUnicodeManyPartialMatches(b *testing.B) {
 // partial matches where the first character in the needle
 // can be found throughout the haystack
 func BenchmarkIndexAllUnicodeManyPartialMatches(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAll(testUnicodeMatchEndCase, "Ⱥtest", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -160,8 +159,7 @@ var _large101 = strings.Repeat(testUnicodeMatchEndCaseLarge, 101)
 func BenchmarkFindAllIndexUnicodeManyPartialMatchesVeryLarge(b *testing.B) {
 	r := regexp.MustCompile(`Ⱥtest`)
 	haystack := []byte(_large101)
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 101 {
 			b.Error("Expected 101 match got", len(matches))
@@ -170,7 +168,7 @@ func BenchmarkFindAllIndexUnicodeManyPartialMatchesVeryLarge(b *testing.B) {
 }
 
 func BenchmarkIndexAllUnicodeManyPartialMatchesVeryLarge(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAll(_large101, "Ⱥtest", -1))
 		if len(matches) != 101 {
 			b.Error("Expected 101 match got", len(matches))
@@ -183,8 +181,7 @@ var _large501 = strings.Repeat(testUnicodeMatchEndCaseLarge, 501)
 func BenchmarkFindAllIndexUnicodeManyPartialMatchesSuperLarge(b *testing.B) {
 	r := regexp.MustCompile(`Ⱥtest`)
 	haystack := []byte(_large501)
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 501 {
 			b.Error("Expected 501 match got", len(matches))
@@ -193,7 +190,7 @@ func BenchmarkFindAllIndexUnicodeManyPartialMatchesSuperLarge(b *testing.B) {
 }
 
 func BenchmarkIndexAllUnicodeManyPartialMatchesSuperLarge(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAll(_large501, "Ⱥtest", -1))
 		if len(matches) != 501 {
 			b.Error("Expected 501 match got", len(matches))

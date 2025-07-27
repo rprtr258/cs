@@ -145,7 +145,7 @@ func (f *FileReaderWorker) GetFileCount() int {
 // that read files from disk into memory
 func (f *FileReaderWorker) Start() {
 	var wg sync.WaitGroup
-	for i := 0; i < max(2, runtime.NumCPU()); i++ {
+	for range max(2, runtime.NumCPU()) {
 		wg.Add(1)
 		go func() {
 			for res := range f.input {

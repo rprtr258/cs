@@ -26,7 +26,7 @@ func RemoveStringDuplicates(elements iter.Seq[string]) iter.Seq[string] {
 func PermuteCase(input string) iter.Seq[string] {
 	max := 1 << len(input)
 	return RemoveStringDuplicates(func(yield func(string) bool) {
-		for i := 0; i < max; i++ {
+		for i := range max {
 			var sb strings.Builder
 			for j, ch := range input { // TODO: j is byte index, so might produce duplicates
 				if i&(1<<j) == 0 {

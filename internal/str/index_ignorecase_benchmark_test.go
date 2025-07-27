@@ -3,14 +3,14 @@ package str
 import (
 	"regexp"
 	"slices"
+	"strings"
 	"testing"
 )
 
 func BenchmarkFindAllIndexCaseInsensitive(b *testing.B) {
 	r := regexp.MustCompile(`(?i)test`)
 	haystack := []byte(testMatchEndCase)
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -19,9 +19,8 @@ func BenchmarkFindAllIndexCaseInsensitive(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseCaseInsensitive(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(testMatchEndCase, "test", -1))
-
 		if len(matches) != 1 {
 			b.Error("Expected single match")
 		}
@@ -31,8 +30,7 @@ func BenchmarkIndexesAllIgnoreCaseCaseInsensitive(b *testing.B) {
 func BenchmarkFindAllIndexLargeCaseInsensitive(b *testing.B) {
 	r := regexp.MustCompile(`(?i)test`)
 	haystack := []byte(testMatchEndCaseLarge)
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -41,7 +39,7 @@ func BenchmarkFindAllIndexLargeCaseInsensitive(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseLargeCaseInsensitive(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(testMatchEndCaseLarge, "test", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -52,8 +50,7 @@ func BenchmarkIndexesAllIgnoreCaseLargeCaseInsensitive(b *testing.B) {
 func BenchmarkFindAllIndexUnicodeCaseInsensitive(b *testing.B) {
 	r := regexp.MustCompile(`(?i)test`)
 	haystack := []byte(testUnicodeMatchEndCase)
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -62,7 +59,7 @@ func BenchmarkFindAllIndexUnicodeCaseInsensitive(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseUnicodeCaseInsensitive(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(testUnicodeMatchEndCase, "test", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -73,8 +70,7 @@ func BenchmarkIndexesAllIgnoreCaseUnicodeCaseInsensitive(b *testing.B) {
 func BenchmarkFindAllIndexUnicodeLargeCaseInsensitive(b *testing.B) {
 	r := regexp.MustCompile(`(?i)test`)
 	haystack := []byte(testUnicodeMatchEndCaseLarge)
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -83,7 +79,7 @@ func BenchmarkFindAllIndexUnicodeLargeCaseInsensitive(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseUnicodeLargeCaseInsensitive(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(testUnicodeMatchEndCaseLarge, "test", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -97,8 +93,7 @@ func BenchmarkIndexesAllIgnoreCaseUnicodeLargeCaseInsensitive(b *testing.B) {
 func BenchmarkFindAllIndexManyPartialMatchesCaseInsensitive(b *testing.B) {
 	r := regexp.MustCompile(`(?i)1test`)
 	haystack := []byte(testMatchEndCase)
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -107,7 +102,7 @@ func BenchmarkFindAllIndexManyPartialMatchesCaseInsensitive(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseManyPartialMatchesCaseInsensitive(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(testMatchEndCase, "1test", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -121,8 +116,7 @@ func BenchmarkIndexesAllIgnoreCaseManyPartialMatchesCaseInsensitive(b *testing.B
 func BenchmarkFindAllIndexUnicodeManyPartialMatchesCaseInsensitive(b *testing.B) {
 	r := regexp.MustCompile(`(?i)Ⱥtest`)
 	haystack := []byte(testUnicodeMatchEndCase)
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -131,7 +125,7 @@ func BenchmarkFindAllIndexUnicodeManyPartialMatchesCaseInsensitive(b *testing.B)
 }
 
 func BenchmarkIndexesAllIgnoreCaseUnicodeManyPartialMatchesCaseInsensitive(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(testUnicodeMatchEndCase, "Ⱥtest", -1))
 		if len(matches) != 1 {
 			b.Error("Expected single match")
@@ -140,15 +134,11 @@ func BenchmarkIndexesAllIgnoreCaseUnicodeManyPartialMatchesCaseInsensitive(b *te
 }
 
 func BenchmarkFindAllIndexUnicodeCaseInsensitiveVeryLarge(b *testing.B) {
-	var large string
-	for i := 0; i <= 100; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 100)
 
 	r := regexp.MustCompile(`(?i)Ⱥtest`)
 	haystack := []byte(large)
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 101 {
 			b.Error("Expected single match got", len(matches))
@@ -157,12 +147,9 @@ func BenchmarkFindAllIndexUnicodeCaseInsensitiveVeryLarge(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseUnicodeCaseInsensitiveVeryLarge(b *testing.B) {
-	var large string
-	for i := 0; i <= 100; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 100)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(large, "Ⱥtest", -1))
 		if len(matches) != 101 {
 			b.Error("Expected single match got", len(matches))
@@ -171,15 +158,12 @@ func BenchmarkIndexesAllIgnoreCaseUnicodeCaseInsensitiveVeryLarge(b *testing.B) 
 }
 
 func BenchmarkFindAllIndexFoldingCaseInsensitiveVeryLarge(b *testing.B) {
-	var large string
-	for i := 0; i <= 100; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 100)
 
 	r := regexp.MustCompile(`(?i)ſ`)
 	haystack := []byte(large)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 101 {
 			b.Error("Expected single match got", len(matches))
@@ -188,12 +172,9 @@ func BenchmarkFindAllIndexFoldingCaseInsensitiveVeryLarge(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveVeryLarge(b *testing.B) {
-	var large string
-	for i := 0; i <= 100; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 100)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(large, "ſ", -1))
 		if len(matches) != 101 {
 			b.Error("Expected single match got", len(matches))
@@ -202,15 +183,12 @@ func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveVeryLarge(b *testing.B) 
 }
 
 func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle1(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
 	r := regexp.MustCompile(`(?i)a`)
 	haystack := []byte(large)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -219,12 +197,9 @@ func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle1(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle1(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(large, "a", -1))
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -233,15 +208,12 @@ func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle1(b *testing.B) {
 }
 
 func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle2(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
 	r := regexp.MustCompile(`(?i)aa`)
 	haystack := []byte(large)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -250,12 +222,9 @@ func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle2(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle2(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(large, "aa", -1))
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -264,15 +233,12 @@ func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle2(b *testing.B) {
 }
 
 func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle3(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
 	r := regexp.MustCompile(`(?i)aaa`)
 	haystack := []byte(large)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -281,12 +247,9 @@ func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle3(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle3(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(large, "aaa", -1))
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -295,15 +258,12 @@ func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle3(b *testing.B) {
 }
 
 func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle4(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
 	r := regexp.MustCompile(`(?i)aaaa`)
 	haystack := []byte(large)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -312,12 +272,9 @@ func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle4(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle4(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(large, "aaaa", -1))
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -326,15 +283,12 @@ func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle4(b *testing.B) {
 }
 
 func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle5(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
 	r := regexp.MustCompile(`(?i)aaaaa`)
 	haystack := []byte(large)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -343,12 +297,9 @@ func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle5(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle5(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(large, "aaaaa", -1))
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -357,15 +308,12 @@ func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle5(b *testing.B) {
 }
 
 func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle6(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
 	r := regexp.MustCompile(`(?i)aaaaaa`)
 	haystack := []byte(large)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -374,12 +322,9 @@ func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle6(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle6(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(large, "aaaaaa", -1))
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -388,15 +333,12 @@ func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle6(b *testing.B) {
 }
 
 func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle7(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
 	r := regexp.MustCompile(`(?i)aaaaaaa`)
 	haystack := []byte(large)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -405,12 +347,9 @@ func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle7(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle7(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(large, "aaaaaaa", -1))
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -419,15 +358,12 @@ func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle7(b *testing.B) {
 }
 
 func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle8(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
 	r := regexp.MustCompile(`(?i)aaaaaaaa`)
 	haystack := []byte(large)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -436,12 +372,9 @@ func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle8(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle8(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(large, "aaaaaaaa", -1))
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -450,15 +383,12 @@ func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle8(b *testing.B) {
 }
 
 func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle9(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
 	r := regexp.MustCompile(`(?i)aaaaaaaaa`)
 	haystack := []byte(large)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -467,12 +397,9 @@ func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle9(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle9(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(large, "aaaaaaaaa", -1))
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -481,15 +408,12 @@ func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle9(b *testing.B) {
 }
 
 func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle10(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
 	r := regexp.MustCompile(`(?i)aaaaaaaaaa`)
 	haystack := []byte(large)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := r.FindAllIndex(haystack, -1)
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))
@@ -498,12 +422,9 @@ func BenchmarkFindAllIndexFoldingCaseInsensitiveNeedle10(b *testing.B) {
 }
 
 func BenchmarkIndexesAllIgnoreCaseFoldingCaseInsensitiveNeedle10(b *testing.B) {
-	var large string
-	for i := 0; i <= 10; i++ {
-		large += testUnicodeMatchEndCaseLarge
-	}
+	large := strings.Repeat(testUnicodeMatchEndCaseLarge, 10)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		matches := slices.Collect(IndexAllIgnoreCase(large, "aaaaaaaaaa", -1))
 		if len(matches) != 0 {
 			b.Error("Expected no matches got", len(matches))

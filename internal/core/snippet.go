@@ -8,6 +8,7 @@ import (
 	"unicode"
 
 	"github.com/rprtr258/cs/internal/str"
+	. "github.com/rprtr258/cs/internal/utils"
 )
 
 const (
@@ -93,10 +94,10 @@ func ExtractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 
 	var bestMatches []bestMatch
 	// Slide around looking for matches that fit in the length
-	for i := 0; i < len(rv3); i++ {
+	for i, r := range rv3 {
 		m := bestMatch{
-			Pos:      rv3[i].Location,
-			Relevant: []relevantV3{rv3[i]},
+			Pos:      r.Location,
+			Relevant: []relevantV3{r},
 		}
 
 		// Slide left
@@ -105,7 +106,7 @@ func ExtractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 			// How close is the matches start to our end?
 			// If the diff is greater than the target then break out as there is no
 			// more reason to keep looking as the slice is sorted
-			if rv3[i].Location[1]-rv3[j].Location[0] > wrapLength {
+			if r.Location[1]-rv3[j].Location[0] > wrapLength {
 				break
 			}
 
@@ -120,7 +121,7 @@ func ExtractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 			// How close is the matches end to our start?
 			// If the diff is greater than the target then break out as there is no
 			// more reason to keep looking as the slice is sorted
-			if rv3[j].Location[1]-rv3[i].Location[0] > wrapLength {
+			if rv3[j].Location[1]-r.Location[0] > wrapLength {
 				break
 			}
 
@@ -172,15 +173,15 @@ func ExtractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 		// m.Score += float64(m.Pos[1] - m.Pos[0]) // Factor in how large the snippet is
 
 		// Apply higher score where the words are near each other
-		// mid := rv3[i].Start + (rv3[i].End-rv3[i].End)/2 // match word midpoint
-		mid := rv3[i].Location[0]
+		// mid := r.Start + (r.End-r.End)/2 // match word midpoint
+		mid := r.Location[0]
 		for _, v := range m.Relevant {
 			p := (v.Location[0] + v.Location[1]) / 2 // comparison word midpoint
 
 			// If the word is within a reasonable distance of this word boost the score
 			// weighted by how common that word is so that matches like 'a' impact the rank
 			// less than something like 'cromulent' which in theory should not occur as much
-			m.Score += iverson(abs(mid-p) < relLength/3) * 100 / float64(documentFrequencies[v.Word])
+			m.Score += iverson(Abs(mid-p) < relLength/3) * 100 / float64(documentFrequencies[v.Word])
 		}
 
 		// Try to make it phrase heavy such that if words line up next to each other
@@ -189,24 +190,24 @@ func ExtractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 			// Use 2 here because we want to avoid punctuation such that a search for
 			// cat dog will still be boosted if we find cat. dog
 			m.Score += _phraseHeavyBoost * iverson(
-				abs(rv3[i].Location[0]-v.Location[1]) <= 2 ||
-					abs(rv3[i].Location[1]-v.Location[0]) <= 2)
+				Abs(r.Location[0]-v.Location[1]) <= 2 ||
+					Abs(r.Location[1]-v.Location[0]) <= 2)
 		}
 
 		// If the match is bounded by a space boost it slightly
 		// because its likely to be a better match
-		m.Score += _spaceBoundBoost*iverson(rv3[i].Location[0] >= 1 && unicode.IsSpace(rune(res.Content[rv3[i].Location[0]-1]))) +
-			_spaceBoundBoost*iverson(rv3[i].Location[1] < len(res.Content)-1 && unicode.IsSpace(rune(res.Content[rv3[i].Location[1]+1]))) +
+		m.Score += _spaceBoundBoost*iverson(r.Location[0] >= 1 && unicode.IsSpace(rune(res.Content[r.Location[0]-1]))) +
+			_spaceBoundBoost*iverson(r.Location[1] < len(res.Content)-1 && unicode.IsSpace(rune(res.Content[r.Location[1]+1]))) +
 
 			// If the word is an exact match to what the user typed boost it
 			// So while the search may be case insensitive the ranking of
 			// the snippet does consider case when boosting ever so slightly
-			_exactMatchBoost*iverson(string(res.Content[rv3[i].Location[0]:rv3[i].Location[1]]) == rv3[i].Word)
+			_exactMatchBoost*iverson(string(res.Content[r.Location[0]:r.Location[1]]) == r.Word)
 
 		// This mod applies over the whole score because we want to most unique words to appear in the middle
 		// of the snippet over those where it is on the edge which this should achieve even if it means
 		// we may miss out on a slightly better match
-		m.Score /= float64(documentFrequencies[rv3[i].Word]) // Factor in how unique the word is
+		m.Score /= float64(documentFrequencies[r.Word]) // Factor in how unique the word is
 		bestMatches = append(bestMatches, m)
 	}
 
@@ -245,7 +246,7 @@ func ExtractRelevantV3(res *FileJob, documentFrequencies map[string]int, relLeng
 			index := bytes.Index(res.Content, match)
 
 			startLineOffset := 1
-			for i := 0; i < index; i++ {
+			for i := range index {
 				if res.Content[i] == '\n' {
 					startLineOffset++
 				}
@@ -323,9 +324,4 @@ func findSpaceLeft(res *FileJob, pos, distance int) (int, bool) {
 	}
 
 	return pos, false
-}
-
-// abs returns the absolute value of x.
-func abs(x int) int {
-	return max(x, -x)
 }

@@ -18,14 +18,10 @@ func HighlightString(content string, locations iter.Seq[[2]int], in, out string)
 	}
 
 	end := -1
-	var found bool
-	var str strings.Builder
+	var sb strings.Builder
 	// Range over str which is rune aware so even if we get invalid
-	// locations we should hopefully ignore them as the byte offset wont
-	// match
+	// locations we should hopefully ignore them as the byte offset wont match
 	for i, x := range content {
-		found = false
-
 		// Find which of the locations match
 		// and if so write the start str
 		if location, ok := highlightCache[i]; ok {
@@ -34,9 +30,8 @@ func HighlightString(content string, locations iter.Seq[[2]int], in, out string)
 
 			// We only write the found str once per match and
 			// only if we are not in the middle of one
-			if !found && end <= 0 {
-				str.WriteString(in)
-				found = true
+			if end <= 0 {
+				sb.WriteString(in)
 			}
 
 			// Determine the expected end location for this match
@@ -51,19 +46,18 @@ func HighlightString(content string, locations iter.Seq[[2]int], in, out string)
 		// the rest and as such we need to remember to close them off if we have gone past
 		// their end. As such this needs to come before we write the current byte
 		if end > 0 && i > end {
-			str.WriteString(out)
+			sb.WriteString(out)
 			end = 0
 		}
 
-		str.WriteRune(x)
+		sb.WriteRune(x)
 
 		// If at the end, and its not -1 meaning the first char
 		// which should never happen (I hope!) then write the end str
 		if i == end && end != -1 {
-			str.WriteString(out)
+			sb.WriteString(out)
 			end = 0
 		}
 	}
-
-	return str.String()
+	return sb.String()
 }

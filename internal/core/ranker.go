@@ -46,15 +46,13 @@ const (
 	BytesWordDivisor   = 2
 )
 
-// Given the results will boost the rank of them based on matches in the
-// file location field.
-// This is not using TF-IDF or any fancy algorithm just basic checks
-// and boosts
+// Given the results will boost the rank of them based on matches in the file location field.
+// This is not using TF-IDF or any fancy algorithm just basic checks and boosts
 func rankResultsLocation(results []*FileJob) []*FileJob {
-	for i := 0; i < len(results); i++ {
+	for i, result := range results {
 		foundTerms := 0
-		for key := range results[i].MatchLocations {
-			l := slices.Collect(str.IndexAllIgnoreCase(results[i].Location, key, -1))
+		for key := range result.MatchLocations {
+			l := slices.Collect(str.IndexAllIgnoreCase(result.Location, key, -1))
 
 			// Boost the rank slightly based on number of matches and on
 			// how long a match it is as we should reward longer matches
@@ -63,7 +61,7 @@ func rankResultsLocation(results []*FileJob) []*FileJob {
 
 				// If the rank is ever 0 than nothing will change, so set it
 				// to a small value to at least introduce some ranking here
-				if results[i].Score == 0 || math.IsNaN(results[i].Score) {
+				if result.Score == 0 || math.IsNaN(result.Score) {
 					results[i].Score = DefaultScoreValue
 				}
 
@@ -113,18 +111,18 @@ func rankResultsLocation(results []*FileJob) []*FileJob {
 // due to how often it is called by things like the TUI mode
 func rankResultsTFIDF(corpusCount int, results []*FileJob, documentFrequencies map[string]int, classic bool) []*FileJob {
 	var weight float64
-	for i := 0; i < len(results); i++ {
+	for i, result := range results {
 		weight = 0
 
 		// We don't know how many words are actually in this document... and I don't want to check
 		// because its going to slow things down. Keep in mind that this works inside the words themselves
 		// I.E. partial matches are the norm so it makes sense to base it on the number of bytes
 		// Also ensure that it is at least 1 to avoid divide by zero errors later on.
-		words := float64(max(1, results[i].Bytes/BytesWordDivisor))
+		words := float64(max(1, result.Bytes/BytesWordDivisor))
 
 		// word in the case is the word we are dealing with IE what the user actually searched for
 		// and wordCount is the locations of those words allowing us to know the number of words matching
-		for word, wordCount := range results[i].MatchLocations {
+		for word, wordCount := range result.MatchLocations {
 			// Technically the IDF for this is wrong because we only
 			// have the count for the matches of the document not all the terms
 			// that are actually required
@@ -180,8 +178,8 @@ func rankResultsTFIDF(corpusCount int, results []*FileJob, documentFrequencies m
 func rankResultsBM25(corpusCount int, results []*FileJob, documentFrequencies map[string]int) []*FileJob {
 	// Get the average number of words across all documents because we need that in BM25 to calculate correctly
 	var averageDocumentWords float64
-	for i := 0; i < len(results); i++ {
-		averageDocumentWords += float64(max(1, results[i].Bytes/BytesWordDivisor))
+	for _, result := range results {
+		averageDocumentWords += float64(max(1, result.Bytes/BytesWordDivisor))
 	}
 	averageDocumentWords /= float64(len(results))
 
@@ -189,18 +187,18 @@ func rankResultsBM25(corpusCount int, results []*FileJob, documentFrequencies ma
 	const b = 0.75
 
 	var weight float64
-	for i := 0; i < len(results); i++ {
+	for i, result := range results {
 		weight = 0
 
 		// We don't know how many words are actually in this document... and I don't want to check
 		// because its going to slow things down. Keep in mind that this works inside the words themselves
 		// I.E. partial matches are the norm so it makes sense to base it on the number of bytes
 		// Also ensure that it is at least 1 to avoid divide by zero errors later on.
-		words := float64(max(1, results[i].Bytes/BytesWordDivisor))
+		words := float64(max(1, result.Bytes/BytesWordDivisor))
 
 		// word in the case is the word we are dealing with IE what the user actually searched for
 		// and wordCount is the locations of those words allowing us to know the number of words matching
-		for word, wordCount := range results[i].MatchLocations {
+		for word, wordCount := range result.MatchLocations {
 			// TF  = number of this words in this document / words in entire document
 			// IDF = number of documents that contain this word
 			tf := float64(len(wordCount)) / words
@@ -213,8 +211,7 @@ func rankResultsBM25(corpusCount int, results []*FileJob, documentFrequencies ma
 		}
 
 		// Override the score here because we don't want whatever we got originally
-		// which is just based on the number of keyword matches... of course this assumes
-		// that
+		// which is just based on the number of keyword matches... of course this assumes that
 		results[i].Score = weight
 	}
 	return results
@@ -238,8 +235,8 @@ func CalculateDocumentTermFrequency(results iter.Seq[*FileJob]) map[string]int {
 // This is mostly used for TF-IDF calculation
 func calculateDocumentFrequency(results []*FileJob) map[string]int {
 	documentFrequencies := map[string]int{}
-	for i := 0; i < len(results); i++ {
-		for k := range results[i].MatchLocations {
+	for _, result := range results {
+		for k := range result.MatchLocations {
 			documentFrequencies[k]++
 		}
 	}

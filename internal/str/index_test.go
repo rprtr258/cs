@@ -57,7 +57,7 @@ func TestDropInReplacement(t *testing.T) {
 	matches1 := r.FindAllStringIndex(testMatchEndCase, -1)
 	matches2 := slices.Collect(IndexAll(testMatchEndCase, "test", -1))
 
-	for i := 0; i < len(matches1); i++ {
+	for i := range len(matches1) {
 		if matches1[i][0] != matches2[i][0] || matches1[i][1] != matches2[i][1] {
 			t.Error("Expect results to match", i)
 		}
@@ -81,7 +81,7 @@ func TestDropInReplacementMultiple(t *testing.T) {
 	matches1 := r.FindAllStringIndex(`111`, -1)
 	matches2 := slices.Collect(IndexAll(`111`, "1", -1))
 
-	for i := 0; i < len(matches1); i++ {
+	for i := range len(matches1) {
 		if matches1[i][0] != matches2[i][0] || matches1[i][1] != matches2[i][1] {
 			t.Error("Expect results to match", i)
 		}
@@ -177,7 +177,7 @@ func TestDropInReplacementMultipleIndexAllIgnoreCaseUnicode(t *testing.T) {
 	matches1 := r.FindAllStringIndex(`111`, -1)
 	matches2 := slices.Collect(IndexAllIgnoreCase(`111`, "1", -1))
 
-	for i := 0; i < len(matches1); i++ {
+	for i := range len(matches1) {
 		if matches1[i][0] != matches2[i][0] || matches1[i][1] != matches2[i][1] {
 			t.Error("Expect results to match", i)
 		}

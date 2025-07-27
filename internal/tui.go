@@ -1,8 +1,6 @@
 package internal
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 	"iter"
 	"maps"
@@ -19,16 +17,8 @@ import (
 
 	"github.com/rprtr258/cs/internal/core"
 	"github.com/rprtr258/cs/internal/str"
+	. "github.com/rprtr258/cs/internal/utils"
 )
-
-func digitsCount(n int) int {
-	res := 0
-	for n > 0 {
-		n /= 10
-		res++
-	}
-	return res
-}
 
 type displayResult struct {
 	Title      *tview.TextView
@@ -131,11 +121,7 @@ func (cont *tuiApplicationController) drawView() {
 		resultsCopy = resultsCopy[:len(tuiDisplayResults)]
 	}
 
-	// We use this to swap out the highlights after we escape to ensure that we don't escape
-	// out own colours
-	md5Digest := md5.New()
-	fmtBegin := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("begin_%d", nowNanos()))))
-	fmtEnd := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("end_%d", nowNanos()))))
+	fmtBegin, fmtEnd := CreateFmts()
 
 	// go and get the codeResults the user wants to see using selected as the offset to display from
 	codeResults := make([]codeResult, 0, len(resultsCopy))
@@ -159,7 +145,7 @@ func (cont *tuiApplicationController) drawView() {
 		coloredContent = strings.ReplaceAll(coloredContent, fmtBegin, "[red]")
 		coloredContent = strings.ReplaceAll(coloredContent, fmtEnd, "[white]")
 
-		maxLineNumberLen := digitsCount(snippet.LinePos[1])
+		maxLineNumberLen := DigitsCount(snippet.LinePos[1])
 
 		lines := strings.Split(coloredContent, "\n")
 		for i, line := range lines {
@@ -231,10 +217,8 @@ func (cont *tuiApplicationController) DoSearch() {
 		go core.NewSearcherWorker(toProcessCh, summaryCh, q)
 
 		// First step is to collect results so we can rank them
-		fileMatches := []string{}
 		for f := range summaryCh {
 			results = append(results, f)
-			fileMatches = append(fileMatches, f.Location)
 		}
 
 		plural := "s"
@@ -279,7 +263,7 @@ var debounced = NewDebouncer(200 * time.Millisecond)
 
 func NewTuiSearch() error {
 	// Create the elements we use to display the code results here
-	for i := 1; i < 50; i++ {
+	for range 50 {
 		tuiDisplayResults = append(tuiDisplayResults, displayResult{
 			Title: tview.NewTextView().
 				SetDynamicColors(true).

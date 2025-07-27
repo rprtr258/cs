@@ -2,9 +2,7 @@ package internal
 
 import (
 	"cmp"
-	"crypto/md5"
 	_ "embed"
-	"encoding/hex"
 	"fmt"
 	"html"
 	"html/template"
@@ -21,6 +19,7 @@ import (
 
 	"github.com/rprtr258/cs/internal/core"
 	"github.com/rprtr258/cs/internal/str"
+	. "github.com/rprtr258/cs/internal/utils"
 )
 
 type searchResult struct {
@@ -96,7 +95,7 @@ func StartHttpServer() error {
 	}
 
 	http.HandleFunc("/file/", func(w http.ResponseWriter, r *http.Request) {
-		startTime := nowMillis()
+		startTime := NowMillis()
 		startPos := tryParseInt(r.URL.Query().Get("sp"), 0)
 		endPos := tryParseInt(r.URL.Query().Get("ep"), 0)
 
@@ -124,12 +123,7 @@ func StartHttpServer() error {
 			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		}
 
-		// Create a random str to define where the start and end of
-		// out highlight should be which we swap out later after we have
-		// HTML escaped everything
-		md5Digest := md5.New()
-		fmtBegin := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("begin_%d", nowNanos()))))
-		fmtEnd := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("end_%d", nowNanos()))))
+		fmtBegin, fmtEnd := CreateFmts()
 
 		coloredContent := str.HighlightString(string(content), slices.Values([][2]int{{startPos, endPos}}), fmtBegin, fmtEnd)
 		coloredContent = html.EscapeString(coloredContent)
@@ -145,7 +139,7 @@ func StartHttpServer() error {
 		}{
 			Location:            path,
 			Content:             template.HTML(coloredContent),
-			RuntimeMilliseconds: nowMillis() - startTime,
+			RuntimeMilliseconds: NowMillis() - startTime,
 		})
 		if err != nil {
 			panic(err)
@@ -159,7 +153,7 @@ func StartHttpServer() error {
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		startTime := nowMillis()
+		startTime := NowMillis()
 		query := r.URL.Query().Get("q")
 		snippetLength := tryParseInt(r.URL.Query().Get("ss"), 300)
 		ext := r.URL.Query().Get("ext")
@@ -216,12 +210,7 @@ func StartHttpServer() error {
 			core.RankResults(fileReaderWorker.GetFileCount(), results)
 		}
 
-		// Create a random str to define where the start and end of
-		// out highlight should be which we swap out later after we have
-		// HTML escaped everything
-		md5Digest := md5.New()
-		fmtBegin := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("begin_%d", nowNanos()))))
-		fmtEnd := hex.EncodeToString(md5Digest.Sum([]byte(fmt.Sprintf("end_%d", nowNanos()))))
+		fmtBegin, fmtEnd := CreateFmts()
 
 		documentTermFrequency := core.CalculateDocumentTermFrequency(slices.Values(results))
 
@@ -292,7 +281,7 @@ func StartHttpServer() error {
 			SnippetSize:         snippetLength,
 			Results:             searchResults,
 			ResultsCount:        len(results),
-			RuntimeMilliseconds: nowMillis() - startTime,
+			RuntimeMilliseconds: NowMillis() - startTime,
 			ProcessedFileCount:  fileCount,
 			ExtensionFacet:      calculateExtensionFacet(extensionFacets, query, snippetLength),
 			Pages:               pages,

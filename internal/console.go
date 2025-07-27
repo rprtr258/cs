@@ -100,6 +100,13 @@ func (f *ResultSummarizer) formatVimGrep(results []*core.FileJob) {
 func (f *ResultSummarizer) formatJson(results []*core.FileJob) {
 	documentFrequency := core.CalculateDocumentTermFrequency(slices.Values(results))
 
+	type jsonResult struct {
+		Filename       string   `json:"filename"`
+		Location       string   `json:"location"`
+		Content        string   `json:"content"`
+		Score          float64  `json:"score"`
+		MatchLocations [][2]int `json:"matchlocations"`
+	}
 	jsonResults := make([]jsonResult, 0, len(results))
 	for _, res := range results {
 		v3, _ := first(core.ExtractRelevantV3(res, documentFrequency, core.SnippetLength))
@@ -158,13 +165,13 @@ func (f *ResultSummarizer) formatDefault(results []*core.FileJob) {
 		}
 
 		lines := ""
-		for i := 0; i < len(snippets); i++ {
-			lines += fmt.Sprintf("%d-%d ", snippets[i].LinePos[0], snippets[i].LinePos[1])
+		for _, snippet := range snippets {
+			lines += fmt.Sprintf("%d-%d ", snippet.LinePos[0], snippet.LinePos[1])
 		}
 
 		color.Magenta(fmt.Sprintf("%s Lines %s(%.3f)", result.Location, lines, result.Score))
 
-		for i := 0; i < len(snippets); i++ {
+		for i, snippet := range snippets {
 			// We have the snippet so now we need to highlight it
 			// we get all the locations that fall in the snippet length
 			// and then remove the length of the snippet cut which
@@ -172,10 +179,10 @@ func (f *ResultSummarizer) formatDefault(results []*core.FileJob) {
 			l := func(yield func([2]int) bool) {
 				for _, value := range result.MatchLocations {
 					for _, s := range value {
-						if s[0] >= snippets[i].Pos[0] && s[1] <= snippets[i].Pos[1] {
+						if s[0] >= snippet.Pos[0] && s[1] <= snippet.Pos[1] {
 							if !yield([2]int{
-								s[0] - snippets[i].Pos[0],
-								s[1] - snippets[i].Pos[0],
+								s[0] - snippet.Pos[0],
+								s[1] - snippet.Pos[0],
 							}) {
 								return
 							}
@@ -184,12 +191,12 @@ func (f *ResultSummarizer) formatDefault(results []*core.FileJob) {
 				}
 			}
 
-			displayContent := snippets[i].Content
+			displayContent := snippet.Content
 
 			// If the start and end pos are 0 then we don't need to highlight because there is
 			// nothing to do so, which means its likely to be a filename match with no content
-			if !(snippets[i].Pos[0] == 0 && snippets[i].Pos[1] == 0) {
-				displayContent = str.HighlightString(snippets[i].Content, l, fmtBegin, fmtEnd)
+			if snippet.Pos[0] != 0 || snippet.Pos[1] != 0 {
+				displayContent = str.HighlightString(snippet.Content, l, fmtBegin, fmtEnd)
 			}
 
 			fmt.Println(displayContent)
@@ -202,12 +209,4 @@ func (f *ResultSummarizer) formatDefault(results []*core.FileJob) {
 			}
 		}
 	}
-}
-
-type jsonResult struct {
-	Filename       string   `json:"filename"`
-	Location       string   `json:"location"`
-	Content        string   `json:"content"`
-	Score          float64  `json:"score"`
-	MatchLocations [][2]int `json:"matchlocations"`
 }

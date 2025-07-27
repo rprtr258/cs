@@ -255,7 +255,7 @@ func IndexAllIgnoreCase(haystack, needle string, limit int) iter.Seq[[2]int] {
 				// match and confirm that the same rune position is a actual match or case fold match
 				// if they are keep looking, if they are not bail out as its not a real match
 				isMatch := false
-				for i := 0; i < len(toMatch); i++ {
+				for i := range len(toMatch) {
 					isMatch = false
 
 					// Check against the actual term and if that's a match we can avoid folding

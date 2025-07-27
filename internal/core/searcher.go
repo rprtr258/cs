@@ -37,7 +37,7 @@ func NewSearcherWorker(input, output chan *FileJob, query []string) {
 	f.searchParams = ParseQuery(f.SearchString)
 
 	var wg sync.WaitGroup
-	for i := 0; i < runtime.NumCPU(); i++ {
+	for range runtime.NumCPU() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

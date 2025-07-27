@@ -227,7 +227,7 @@ The default input field in tui mode supports some nano commands
 func main() {
 	if core.Pprof {
 		f, _ := os.Create("profile.pprof")
-		pprof.StartCPUProfile(f)
+		_ = pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
 	}
 

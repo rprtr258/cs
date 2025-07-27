@@ -171,14 +171,14 @@ func makeFuzzyDistanceOne(term string) iter.Seq[string] {
 		}
 
 		// Delete letters so turn "test" into "est" "tst" "tet"
-		for i := 0; i < len(term); i++ {
+		for i := range len(term) {
 			if !yield(term[:i] + term[i+1:]) {
 				return
 			}
 		}
 
 		// Replace a letter or digit which effectively does transpose for us
-		for i := 0; i < len(term); i++ {
+		for i := range len(term) {
 			for _, b := range _letterDigitFuzzyBytes {
 				if !yield(term[:i] + string(b) + term[i+1:]) {
 					return
@@ -187,7 +187,7 @@ func makeFuzzyDistanceOne(term string) iter.Seq[string] {
 		}
 
 		// Insert a letter or digit
-		for i := 0; i < len(term); i++ {
+		for i := range len(term) {
 			for _, b := range _letterDigitFuzzyBytes {
 				if !yield(term[:i] + string(b) + term[i:]) {
 					return
@@ -208,7 +208,7 @@ func makeFuzzyDistanceTwo(term string) iter.Seq[string] {
 		}
 
 		// Maybe they forgot to type a letter? Try adding one
-		for i := 0; i < len(term)+1; i++ {
+		for i := range len(term) + 1 {
 			for _, b := range _letterDigitFuzzyBytes {
 				if !yield(term[:i] + string(b) + term[i:]) {
 					return
